@@ -309,26 +309,164 @@
         }
 
         function exportSystemicWorksheet() {
-            var html = '<!DOCTYPE html><html><head><title>Arbeitsblatt</title><style>body{font-family:Arial;padding:20px;}</style></head><body>' +
-                '<h1>🎯 Reflexions-Radar Arbeitsblatt</h1><h2>Team:</h2>';
-            for (var i = 0; i < members.length; i++) {
-                html += '<p><strong>' + members[i].name + '</strong> - Stress: ' + members[i].stress + '/5</p>';
+            try {
+                if (members.length === 0) {
+                    showInfoMessage('⚠️ Bitte erstellen Sie eine Konstellation, bevor Sie das Arbeitsblatt exportieren.');
+                    return;
+                }
+                
+                var currentDate = new Date();
+                var dateString = currentDate.toLocaleDateString('de-DE');
+                var timeString = currentDate.toLocaleTimeString('de-DE');
+                
+                // SVG-Konstellation generieren
+                var svgContent = generateConstellationSVG();
+                
+                var worksheetHTML = '<!DOCTYPE html><html lang="de"><head>';
+                worksheetHTML += '<meta charset="UTF-8">';
+                worksheetHTML += '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
+                worksheetHTML += '<title>Systemisches Arbeitsblatt - Reflexions-Radar</title>';
+                worksheetHTML += '<style>';
+                worksheetHTML += 'body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; background: #f5f5f5; }';
+                worksheetHTML += '.worksheet { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; }';
+                worksheetHTML += 'h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }';
+                worksheetHTML += 'h2 { color: #34495e; margin-top: 25px; }';
+                worksheetHTML += '.constellation-svg { border: 2px solid #3498db; border-radius: 10px; background: #f8f9fa; padding: 20px; margin: 20px 0; }';
+                worksheetHTML += '.reflection-entry { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 10px 0; border-radius: 5px; }';
+                worksheetHTML += '.question-block { background: #f8f9fa; border-left: 4px solid #28a745; padding: 15px; margin: 15px 0; }';
+                worksheetHTML += '.answer-space { border: 1px dashed #6c757d; min-height: 80px; padding: 10px; background: white; margin-top: 10px; }';
+                worksheetHTML += '@media print { body { background: white; } .worksheet { box-shadow: none; margin: 0; padding: 20px; } }';
+                worksheetHTML += '</style></head><body>';
+                
+                worksheetHTML += '<div class="worksheet">';
+                worksheetHTML += '<h1>🎯 Systemisches Arbeitsblatt</h1>';
+                worksheetHTML += '<p><strong>Erstellt am:</strong> ' + dateString + ' um ' + timeString + '</p>';
+                
+                // SVG-Konstellation einfügen
+                worksheetHTML += '<h2>🎭 Aktuelle Konstellation</h2>';
+                worksheetHTML += '<div class="constellation-svg">' + svgContent + '</div>';
+                
+                // Team-Details
+                worksheetHTML += '<h2>👥 Team-Details</h2>';
+                for (var i = 0; i < members.length; i++) {
+                    var member = members[i];
+                    var stressDesc = ['', 'Sehr entspannt', 'Entspannt', 'Angespannt', 'Sehr angespannt', 'Überlastet'][member.stress];
+                    worksheetHTML += '<p><strong>' + member.name + '</strong> - Stress-Level: ' + member.stress + '/5 (' + stressDesc + ')</p>';
+                }
+                
+                // Reflexionen
+                if (userResponses.length > 0) {
+                    worksheetHTML += '<h2>💭 Reflexions-Verlauf</h2>';
+                    for (var j = 0; j < userResponses.length; j++) {
+                        var response = userResponses[j];
+                        worksheetHTML += '<div class="reflection-entry">';
+                        worksheetHTML += '<h3>Reflexion ' + (j + 1) + ' - ' + response.type + '</h3>';
+                        worksheetHTML += '<p><strong>Antwort:</strong> ' + (response.input || response.userInput || 'Keine Eingabe') + '</p>';
+                        if (response.timestamp) {
+                            worksheetHTML += '<p><small>Zeit: ' + new Date(response.timestamp).toLocaleString('de-DE') + '</small></p>';
+                        }
+                        worksheetHTML += '</div>';
+                    }
+                }
+                
+                // Reflexionsfragen
+                worksheetHTML += '<h2>🔍 Reflexionsfragen für die Weiterarbeit</h2>';
+                var questions = [
+                    'Welche Person/Rolle hatte den größten Einfluss auf meine Reflexionen?',
+                    'Welche Muster erkenne ich in den Stress-Levels und Beziehungen?',
+                    'Wo sehe ich Entwicklungspotential für das System?',
+                    'Welche konkreten Schritte möchte ich als nächstes umsetzen?'
+                ];
+                
+                for (var k = 0; k < questions.length; k++) {
+                    worksheetHTML += '<div class="question-block">';
+                    worksheetHTML += '<p><strong>' + (k + 1) + '. ' + questions[k] + '</strong></p>';
+                    worksheetHTML += '<div class="answer-space">Ihre Antwort...</div>';
+                    worksheetHTML += '</div>';
+                }
+                
+                worksheetHTML += '</div></body></html>';
+                
+                var blob = new Blob([worksheetHTML], { type: 'text/html;charset=utf-8' });
+                var url = window.URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                link.href = url;
+                link.download = 'reflexions-radar-arbeitsblatt_' + currentDate.toISOString().split('T')[0] + '.html';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                
+                showPopup('✅ Arbeitsblatt erstellt!', 'Das systemische Arbeitsblatt wurde mit visueller Konstellation heruntergeladen!');
+                
+            } catch (error) {
+                console.error('Fehler beim Export:', error);
+                showPopup('❌ Export-Fehler', 'Fehler beim Erstellen des Arbeitsblatts. Bitte versuchen Sie es erneut.');
             }
-            if (userResponses.length > 0) {
-                html += '<h2>Reflexionen:</h2>';
-                for (var j = 0; j < userResponses.length; j++) {
-                    html += '<p><strong>' + userResponses[j].type + ':</strong> ' + userResponses[j].input + '</p>';
+        }
+
+        function generateConstellationSVG() {
+            var svgWidth = 600;
+            var svgHeight = 400;
+            
+            var svg = '<svg width="' + svgWidth + '" height="' + svgHeight + '" xmlns="http://www.w3.org/2000/svg">';
+            svg += '<defs><style>';
+            svg += '.stress-1-svg { fill: #4CAF50; }';
+            svg += '.stress-2-svg { fill: #8BC34A; }';
+            svg += '.stress-3-svg { fill: #FF9800; }';
+            svg += '.stress-4-svg { fill: #F57C00; }';
+            svg += '.stress-5-svg { fill: #F44336; }';
+            svg += '.member-text { font-family: Arial, sans-serif; font-size: 10px; text-anchor: middle; fill: white; font-weight: bold; }';
+            svg += '.connection-line-svg { stroke: #666; stroke-width: 2; opacity: 0.6; }';
+            svg += '</style></defs>';
+            
+            // Skalierung für SVG berechnen
+            var scaleX = svgWidth / 800;
+            var scaleY = svgHeight / 600;
+            
+            // Verbindungslinien zeichnen
+            for (var i = 0; i < connections.length; i++) {
+                var connection = connections[i];
+                var member1 = members.find(function(m) { return m.id === connection.member1; });
+                var member2 = members.find(function(m) { return m.id === connection.member2; });
+                
+                if (member1 && member2) {
+                    var x1 = member1.x * scaleX + 30;
+                    var y1 = member1.y * scaleY + 30;
+                    var x2 = member2.x * scaleX + 30;
+                    var y2 = member2.y * scaleY + 30;
+                    
+                    var distance = Math.sqrt(Math.pow(member1.x - member2.x, 2) + Math.pow(member1.y - member2.y, 2));
+                    if (distance < 400) {
+                        svg += '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" class="connection-line-svg"/>';
+                        
+                        // Emoji in der Mitte der Linie
+                        var midX = (x1 + x2) / 2;
+                        var midY = (y1 + y2) / 2;
+                        svg += '<text x="' + midX + '" y="' + (midY + 3) + '" font-size="12" text-anchor="middle">' + connection.emoji + '</text>';
+                    }
                 }
             }
-            html += '</body></html>';
             
-            var blob = new Blob([html], { type: 'text/html' });
-            var url = URL.createObjectURL(blob);
-            var link = document.createElement('a');
-            link.href = url; link.download = 'reflexions-arbeitsblatt.html';
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            showPopup('Export fertig!', 'Arbeitsblatt wurde heruntergeladen.');
+            // Team-Mitglieder zeichnen
+            for (var i = 0; i < members.length; i++) {
+                var member = members[i];
+                var x = member.x * scaleX + 30;
+                var y = member.y * scaleY + 30;
+                var radius = 25;
+                
+                svg += '<circle cx="' + x + '" cy="' + y + '" r="' + radius + '" class="stress-' + member.stress + '-svg" stroke="white" stroke-width="2"/>';
+                
+                // Name in mehreren Zeilen
+                var nameLines = member.name.split('\n');
+                for (var j = 0; j < nameLines.length; j++) {
+                    var lineY = y + (j - (nameLines.length - 1) / 2) * 8;
+                    svg += '<text x="' + x + '" y="' + lineY + '" class="member-text">' + nameLines[j] + '</text>';
+                }
+            }
+            
+            svg += '</svg>';
+            return svg;
         }
 
         function saveState() {
