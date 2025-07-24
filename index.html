@@ -1,264 +1,111 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reflexions-Radar v2.0</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: white; }
-        .header { background: rgba(255,255,255,0.1); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.2); border-radius: 0 0 20px 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); flex-wrap: wrap; gap: 10px; }
-        .header-left { display: flex; align-items: center; gap: 15px; }
-        .logo { font-size: 24px; font-weight: bold; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-        .settings-icon { font-size: 20px; cursor: pointer; padding: 8px; border-radius: 50%; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s ease; user-select: none; }
-        .settings-icon:hover { background: rgba(255,255,255,0.2); transform: rotate(45deg); }
-        .controls { display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn { padding: 8px 16px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); border-radius: 25px; color: white; cursor: pointer; transition: all 0.3s ease; font-size: 13px; white-space: nowrap; backdrop-filter: blur(10px); }
-        .btn:hover { background: rgba(255,255,255,0.25); transform: translateY(-2px); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn.export-btn { background: linear-gradient(135deg, rgba(76,175,80,0.3), rgba(69,160,73,0.3)); border: 1px solid rgba(76,175,80,0.4); font-weight: bold; }
-        
-        .menu-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 999; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
-        .menu-overlay.open { opacity: 1; visibility: visible; }
-        .backup-menu { position: fixed; top: 0; right: 0; width: 350px; height: 100vh; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); border-left: 1px solid rgba(255,255,255,0.2); z-index: 1000; padding: 30px; overflow-y: auto; transform: translateX(100%); transition: transform 0.3s ease; }
-        .backup-menu.open { transform: translateX(0); }
-        .save-new-section { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.2); }
-        .backup-input { width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; color: white; font-size: 14px; margin-bottom: 10px; }
-        .backup-input::placeholder { color: rgba(255,255,255,0.6); }
-        .backup-item { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 15px; margin-bottom: 15px; }
-        .backup-item-title { font-weight: bold; color: #81C784; margin-bottom: 8px; font-size: 14px; }
-        .backup-item-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .backup-actions { display: flex; gap: 8px; }
-        .backup-btn { padding: 4px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 15px; color: white; font-size: 11px; cursor: pointer; transition: all 0.2s ease; }
-        .backup-btn:hover { background: rgba(255,255,255,0.25); }
-        .backup-btn.delete { background: rgba(244,67,54,0.3); border-color: rgba(244,67,54,0.5); }
-        .backup-btn.delete:hover { background: rgba(244,67,54,0.5); }
-        
-        .workspace { position: relative; height: calc(100vh - 100px); overflow: hidden; }
-        .team-member { position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(15px); border: 2px solid rgba(255,255,255,0.3); font-weight: bold; text-align: center; font-size: 12px; user-select: none; width: 100px; height: 100px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
-        .team-member:hover { transform: scale(1.05); }
-        .stress-1 { background: linear-gradient(135deg, rgba(46,125,50,0.8), rgba(76,175,80,0.8)); }
-        .stress-2 { background: linear-gradient(135deg, rgba(104,159,56,0.8), rgba(139,195,74,0.8)); }
-        .stress-3 { background: linear-gradient(135deg, rgba(255,152,0,0.8), rgba(255,183,77,0.8)); }
-        .stress-4 { background: linear-gradient(135deg, rgba(245,124,0,0.8), rgba(255,143,0,0.8)); }
-        .stress-5 { background: linear-gradient(135deg, rgba(244,67,54,0.8), rgba(239,83,80,0.8)); animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-        
-        .connection-line { position: absolute; height: 3px; background: rgba(255,255,255,0.4); transform-origin: left center; cursor: pointer; border-radius: 2px; }
-        .connection-emoji { position: absolute; background: rgba(0,0,0,0.6); color: white; padding: 6px 10px; border-radius: 15px; font-size: 16px; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px); z-index: 100; }
-        .popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); color: white; padding: 30px; border-radius: 20px; max-width: 500px; z-index: 1000; backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.2); }
-        .popup h3 { color: #81C784; margin-bottom: 15px; font-size: 18px; }
-        .close-btn { position: absolute; top: 15px; right: 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 18px; cursor: pointer; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
-        
-        .legend { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.4); padding: 20px; border-radius: 20px; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.2); min-width: 200px; }
-        .legend h4 { margin-bottom: 15px; color: #81C784; }
-        .legend-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 12px; }
-        .legend-circle { width: 20px; height: 20px; border-radius: 50%; margin-right: 10px; }
-        .stats { position: absolute; bottom: 20px; left: 20px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 20px; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.2); }
-        .text-response-area { width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 12px; border-radius: 10px; margin: 15px 0; font-size: 14px; min-height: 80px; font-family: inherit; }
-        .ai-response { background: rgba(129,199,132,0.2); border-left: 4px solid #81C784; padding: 15px; margin: 15px 0; border-radius: 10px; font-style: italic; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="header-left">
-            <div class="logo">🎯 Reflexions-Radar</div>
-            <div class="settings-icon" onclick="toggleBackupMenu()">⚙️</div>
-        </div>
-        <div class="controls">
-            <button class="btn" id="reflectionBtn">💭 Reflexion</button>
-            <button class="btn" id="scalingBtn">📊 Skalierung</button>
-            <button class="btn" id="wonderBtn">✨ Wunderfrage</button>
-            <button class="btn" id="addPersonBtn">+ Person</button>
-            <button class="btn" id="backBtn">↩️ Zurück</button>
-            <button class="btn" id="forwardBtn">↪️ Vorwärts</button>
-            <button class="btn" id="sessionBtn">📄 Session</button>
-            <button class="btn export-btn" id="worksheetBtn">📋 Arbeitsblatt</button>
-            <button class="btn" id="resetBtn">🔄 Reset</button>
-        </div>
-    </div>
-
-    <div class="menu-overlay" id="menuOverlay" onclick="closeBackupMenu()"></div>
-    <div class="backup-menu" id="backupMenu">
-        <h3>⚙️ Session-Verwaltung <button class="close-btn" onclick="closeBackupMenu()">×</button></h3>
-        <div class="save-new-section">
-            <h4 style="color: white; margin-bottom: 10px;">💾 Aktuelle Session speichern</h4>
-            <input type="text" class="backup-input" id="backupNameInput" placeholder="Session-Name eingeben..." maxlength="30">
-            <button class="btn" onclick="saveCurrentState()" style="width: 100%; margin-top: 5px;">Speichern</button>
-        </div>
-        <div>
-            <h4 style="color: white; margin-bottom: 15px;">📁 Gespeicherte Sessions</h4>
-            <div id="backupList">
-                <p style="color: #ccc; font-style: italic; text-align: center; padding: 20px;">Noch keine Sessions gespeichert</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="workspace" id="workspace">
-        <div class="legend">
-            <h4>Stress-Level</h4>
-            <div class="legend-item"><div class="legend-circle stress-1"></div><span>1 - Sehr entspannt</span></div>
-            <div class="legend-item"><div class="legend-circle stress-2"></div><span>2 - Entspannt</span></div>
-            <div class="legend-item"><div class="legend-circle stress-3"></div><span>3 - Angespannt</span></div>
-            <div class="legend-item"><div class="legend-circle stress-4"></div><span>4 - Sehr angespannt</span></div>
-            <div class="legend-item"><div class="legend-circle stress-5"></div><span>5 - Überlastet</span></div>
-            <div style="margin-top: 15px; font-size: 11px; color: #ccc;">💡 Doppelklick = Stress ändern<br>🖱️ Halten & Ziehen = Position ändern<br>🔗 Linie klicken = Beziehung bearbeiten</div>
-        </div>
-        <div class="stats">
-            <h4 style="color: #81C784; margin-bottom: 10px;">Reflexions-Impulse</h4>
-            <div style="font-size: 12px; line-height: 1.4;">
-                <div>Durchschnittlicher Stress: <span id="avgStress">Mittel</span></div>
-                <div>Belastete Bereiche: <span id="overloaded">1</span></div>
-                <div style="margin-top: 10px; color: #ccc;">💭 Betrachte deine Position<br>🎯 Erkenne Muster<br>🌱 Reflektiere deinen Beitrag</div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        var members = [
-            { id: 1, name: 'Anna\n(Projektleitung)', x: 200, y: 150, stress: 4 },
-            { id: 2, name: 'Marcus\n(Entwicklung)', x: 400, y: 250, stress: 3 },
-            { id: 3, name: 'Sarah\n(Design)', x: 300, y: 400, stress: 1 },
-            { id: 4, name: 'Tom\n(QA)', x: 600, y: 200, stress: 2 }
-        ];
-        var connections = [], nextId = 5, isDragging = false, dragElement = null, dragOffset = { x: 0, y: 0 };
-        var userResponses = [], stateHistory = [], currentStateIndex = -1, savedStates = [], backupMenuOpen = false;
-        var clickCount = 0, clickTimer = null, holdTimer = null, isHolding = false, startPos = { x: 0, y: 0 };
-
-        var reflections = [
-            "🪞 Welche Rolle übernimmst du normalerweise in stressigen Teamsituationen?",
-            "💭 Was ist dein automatisches Verhalten, wenn im Team Spannungen entstehen?",
-            "🌱 Wofür ist deine Position im Team nützlich - auch wenn sie manchmal anstrengend ist?"
-        ];
-
-        function init() {
-            initConnections(); createMembers(); updateConnections(); updateStats(); saveState();
-            document.getElementById('reflectionBtn').addEventListener('click', showReflection);
-            document.getElementById('sessionBtn').addEventListener('click', showSessionSummary);
-            document.getElementById('worksheetBtn').addEventListener('click', exportSystemicWorksheet);
-            document.getElementById('resetBtn').addEventListener('click', resetAll);
-            document.getElementById('backBtn').addEventListener('click', goBack);
-            document.getElementById('forwardBtn').addEventListener('click', goForward);
-            setTimeout(() => showPopup('Reflexions-Radar v2.0! 🎯', '⚙️ Backup-System verfügbar<br>Phase 1 & 2 abgeschlossen!'), 1000);
-        }
-
-        function initConnections() {
-            connections = [];
-            for (var i = 0; i < members.length; i++) {
-                for (var j = i + 1; j < members.length; j++) {
-                    connections.push({ id: members[i].id + '-' + members[j].id, member1: members[i].id, member2: members[j].id, emoji: '🤝' });
-                }
+            for (var i = 0; i < existingLines.length; i++) {
+                existingLines[i].remove();
             }
-        }
-
-        function createMembers() {
-            var workspace = document.getElementById('workspace');
-            var existingMembers = workspace.querySelectorAll('.team-member');
-            for (var i = 0; i < existingMembers.length; i++) existingMembers[i].remove();
-            
-            for (var i = 0; i < members.length; i++) {
-                var member = members[i], div = document.createElement('div');
-                div.className = 'team-member stress-' + member.stress;
-                div.style.left = member.x + 'px'; div.style.top = member.y + 'px';
-                div.textContent = member.name; div.dataset.id = member.id;
-                div.addEventListener('mousedown', handleInteractionStart);
-                workspace.appendChild(div);
-            }
-        }
-
-        function handleInteractionStart(e) {
-            e.preventDefault();
-            var clientX = e.clientX || (e.touches && e.touches[0].clientX);
-            var clientY = e.clientY || (e.touches && e.touches[0].clientY);
-            startPos = { x: clientX, y: clientY }; isHolding = false;
-            
-            clickCount++;
-            if (clickCount === 1) {
-                clickTimer = setTimeout(() => { clickCount = 0; startHoldTimer(e.target, e); }, 300);
-            } else if (clickCount === 2) {
-                clearTimeout(clickTimer); clearTimeout(holdTimer); clickCount = 0; changeStress(e);
-            }
-        }
-
-        function startHoldTimer(element, originalEvent) {
-            holdTimer = setTimeout(() => { isHolding = true; startDrag(originalEvent); }, 600);
-        }
-
-        function startDrag(e) {
-            isDragging = true; dragElement = e.target.closest('.team-member');
-            var rect = dragElement.getBoundingClientRect();
-            var clientX = e.clientX || (e.touches && e.touches[0].clientX);
-            var clientY = e.clientY || (e.touches && e.touches[0].clientY);
-            dragOffset.x = clientX - rect.left; dragOffset.y = clientY - rect.top;
-            document.addEventListener('mousemove', drag); document.addEventListener('mouseup', stopDrag);
-        }
-
-        function drag(e) {
-            if (!isDragging || !dragElement) return;
-            var workspace = document.getElementById('workspace'), workspaceRect = workspace.getBoundingClientRect();
-            var clientX = e.clientX || (e.touches && e.touches[0].clientX);
-            var clientY = e.clientY || (e.touches && e.touches[0].clientY);
-            var newX = Math.max(0, Math.min(clientX - workspaceRect.left - dragOffset.x, workspaceRect.width - 100));
-            var newY = Math.max(0, Math.min(clientY - workspaceRect.top - dragOffset.y, workspaceRect.height - 100));
-            dragElement.style.left = newX + 'px'; dragElement.style.top = newY + 'px';
-            var member = members.find(m => m.id === parseInt(dragElement.dataset.id));
-            if (member) { member.x = newX; member.y = newY; } updateConnections();
-        }
-
-        function stopDrag() {
-            if (isDragging) saveState();
-            isDragging = false; dragElement = null;
-            document.removeEventListener('mousemove', drag); document.removeEventListener('mouseup', stopDrag);
-        }
-
-        function changeStress(e) {
-            if (isDragging || isHolding) return;
-            e.stopPropagation();
-            var memberId = parseInt(e.target.closest('.team-member').dataset.id);
-            var member = members.find(m => m.id === memberId);
-            if (member) {
-                member.stress = (member.stress % 5) + 1;
-                e.target.closest('.team-member').className = 'team-member stress-' + member.stress;
-                updateStats(); saveState();
-            }
-        }
-
-        function updateConnections() {
-            var workspace = document.getElementById('workspace');
-            var existingLines = workspace.querySelectorAll('.connection-line, .connection-emoji');
-            for (var i = 0; i < existingLines.length; i++) existingLines[i].remove();
             
             for (var i = 0; i < connections.length; i++) {
                 var connection = connections[i];
-                var member1 = members.find(m => m.id === connection.member1);
-                var member2 = members.find(m => m.id === connection.member2);
+                var member1 = members.find(function(m) { return m.id === connection.member1; });
+                var member2 = members.find(function(m) { return m.id === connection.member2; });
+                
                 if (!member1 || !member2) continue;
                 
-                var distance = Math.sqrt(Math.pow(member1.x - member2.x, 2) + Math.pow(member1.y - member2.y, 2));
+                var distance = Math.sqrt(
+                    Math.pow(member1.x - member2.x, 2) + 
+                    Math.pow(member1.y - member2.y, 2)
+                );
+                
                 if (distance < 400) {
                     var line = document.createElement('div');
                     line.className = 'connection-line';
+                    
                     var angle = Math.atan2(member2.y - member1.y, member2.x - member1.x);
-                    var startX = member1.x + 50, startY = member1.y + 50;
-                    line.style.left = startX + 'px'; line.style.top = startY + 'px';
-                    line.style.width = distance + 'px'; line.style.transform = 'rotate(' + angle + 'rad)';
+                    var startX = member1.x + 50;
+                    var startY = member1.y + 50;
+                    
+                    line.style.left = startX + 'px';
+                    line.style.top = startY + 'px';
+                    line.style.width = distance + 'px';
+                    line.style.transform = 'rotate(' + angle + 'rad)';
+                    
+                    line.addEventListener('click', function(connectionId) {
+                        return function(e) {
+                            e.stopPropagation();
+                            editEmoji(connectionId);
+                        };
+                    }(connection.id));
+                    
                     workspace.appendChild(line);
                     
                     var emojiDiv = document.createElement('div');
-                    emojiDiv.className = 'connection-emoji'; emojiDiv.textContent = connection.emoji;
+                    emojiDiv.className = 'connection-emoji';
+                    emojiDiv.textContent = connection.emoji;
+                    
                     var midX = startX + (distance / 2) * Math.cos(angle);
                     var midY = startY + (distance / 2) * Math.sin(angle);
-                    emojiDiv.style.left = midX + 'px'; emojiDiv.style.top = midY + 'px';
+                    
+                    emojiDiv.style.left = midX + 'px';
+                    emojiDiv.style.top = midY + 'px';
                     emojiDiv.style.transform = 'translate(-50%, -50%)';
+                    
+                    emojiDiv.addEventListener('click', function(connectionId) {
+                        return function(e) {
+                            e.stopPropagation();
+                            editEmoji(connectionId);
+                        };
+                    }(connection.id));
+                    
                     workspace.appendChild(emojiDiv);
                 }
             }
         }
 
+        function editEmoji(connectionId) {
+            var connection = connections.find(function(c) { return c.id === connectionId; });
+            if (!connection) return;
+            
+            removeAllPopups();
+            
+            var popup = document.createElement('div');
+            popup.className = 'popup';
+            popup.innerHTML = 
+                '<button class="close-btn" onclick="removeAllPopups()">×</button>' +
+                '<h3>🔗 Beziehung charakterisieren</h3>' +
+                '<p>Wie würdest du diese Beziehung beschreiben?</p>' +
+                '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0;">' +
+                '<button class="btn" onclick="selectEmoji(\'' + connectionId + '\', \'🤝\')" style="font-size: 20px; padding: 10px;">🤝<br><small>Kooperation</small></button>' +
+                '<button class="btn" onclick="selectEmoji(\'' + connectionId + '\', \'💚\')" style="font-size: 20px; padding: 10px;">💚<br><small>Vertrauen</small></button>' +
+                '<button class="btn" onclick="selectEmoji(\'' + connectionId + '\', \'❤️\')" style="font-size: 20px; padding: 10px;">❤️<br><small>Herzlich</small></button>' +
+                '<button class="btn" onclick="selectEmoji(\'' + connectionId + '\', \'⚡\')" style="font-size: 20px; padding: 10px;">⚡<br><small>Dynamisch</small></button>' +
+                '<button class="btn" onclick="selectEmoji(\'' + connectionId + '\', \'🌱\')" style="font-size: 20px; padding: 10px;">🌱<br><small>Wachsend</small></button>' +
+                '<button class="btn" onclick="selectEmoji(\'' + connectionId + '\', \'🌟\')" style="font-size: 20px; padding: 10px;">🌟<br><small>Inspirierend</small></button>' +
+                '<button class="btn" onclick="selectEmoji(\'' + connectionId + '\', \'🔥\')" style="font-size: 20px; padding: 10px;">🔥<br><small>Intensiv</small></button>' +
+                '<button class="btn" onclick="selectEmoji(\'' + connectionId + '\', \'❄️\')" style="font-size: 20px; padding: 10px;">❄️<br><small>Distanziert</small></button>' +
+                '<button class="btn" onclick="selectEmoji(\'' + connectionId + '\', \'🤔\')" style="font-size: 20px; padding: 10px;">🤔<br><small>Fragend</small></button>' +
+                '<button class="btn" onclick="selectEmoji(\'' + connectionId + '\', \'😕\')" style="font-size: 20px; padding: 10px;">😕<br><small>Unsicher</small></button>' +
+                '<button class="btn" onclick="selectEmoji(\'' + connectionId + '\', \'😤\')" style="font-size: 20px; padding: 10px;">😤<br><small>Angespannt</small></button>' +
+                '<button class="btn" onclick="selectEmoji(\'' + connectionId + '\', \'🌊\')" style="font-size: 20px; padding: 10px;">🌊<br><small>Im Fluss</small></button>' +
+                '</div>' +
+                '<p style="font-size: 12px; color: #ccc; text-align: center;">Aktuell: ' + connection.emoji + '</p>';
+            
+            document.body.appendChild(popup);
+        }
+
+        function selectEmoji(connectionId, emoji) {
+            var connection = connections.find(function(c) { return c.id === connectionId; });
+            if (connection) {
+                connection.emoji = emoji;
+                updateConnections();
+                saveState();
+            }
+            removeAllPopups();
+        }
+
         function updateStats() {
-            var avgStress = members.reduce((sum, m) => sum + m.stress, 0) / members.length;
-            var overloaded = members.filter(m => m.stress >= 4).length;
-            document.getElementById('avgStress').textContent = avgStress <= 2 ? 'Niedrig' : avgStress <= 3 ? 'Mittel' : 'Hoch';
+            var avgStress = members.reduce(function(sum, m) { return sum + m.stress; }, 0) / members.length;
+            var overloaded = members.filter(function(m) { return m.stress >= 4; }).length;
+            
+            document.getElementById('avgStress').textContent = 
+                avgStress <= 2 ? 'Niedrig' : avgStress <= 3 ? 'Mittel' : 'Hoch';
             document.getElementById('overloaded').textContent = overloaded;
         }
 
@@ -267,44 +114,200 @@
             showQuestionWithInput('Systemische Reflexion', question);
         }
 
-        function showQuestionWithInput(title, question) {
-            removeAllPopups();
-            var questionId = 'q_' + Date.now();
-            var popup = document.createElement('div'); popup.className = 'popup';
-            popup.innerHTML = '<button class="close-btn" onclick="removeAllPopups()">×</button><h3>' + title + '</h3><p>' + question + '</p>' +
-                '<textarea class="text-response-area" id="response_' + questionId + '" placeholder="Deine Gedanken..." maxlength="140"></textarea>' +
-                '<div style="text-align: center; margin-top: 15px;"><button class="btn" onclick="submitResponse(\'' + questionId + '\', \'' + title + '\')">Festhalten</button></div>';
-            document.body.appendChild(popup);
+        function showWonder() {
+            var question = wonderQuestions[Math.floor(Math.random() * wonderQuestions.length)];
+            showQuestionWithInput('Lösungsfokussierte Wunderfrage', question);
         }
 
-        function submitResponse(questionId, questionType) {
-            var textarea = document.getElementById('response_' + questionId), response = textarea.value.trim();
-            if (!response) { alert('Bitte teile deine Gedanken mit.'); return; }
-            userResponses.push({ id: questionId, type: questionType, input: response, userInput: response, timestamp: new Date() });
-            textarea.parentElement.innerHTML += '<div class="ai-response">Danke! Fließt ins Arbeitsblatt ein.</div>';
+        function showScaling() {
+            var question = scalingQuestions[Math.floor(Math.random() * scalingQuestions.length)];
+            showScalingPopup(question);
+        }
+
+        function showQuestionWithInput(title, question) {
+            removeAllPopups();
+            
+            var questionId = 'q_' + Date.now();
+            
+            var popup = document.createElement('div');
+            popup.className = 'popup';
+            popup.innerHTML = 
+                '<button class="close-btn" onclick="removeAllPopups()">×</button>' +
+                '<h3>' + title + '</h3>' +
+                '<p>' + question + '</p>' +
+                '<textarea class="text-response-area" id="response_' + questionId + '" ' +
+                'placeholder="Deine Gedanken dazu... (max. 140 Zeichen)" maxlength="140"></textarea>' +
+                '<div class="char-counter" id="counter_' + questionId + '">0/140</div>' +
+                '<div style="text-align: center; margin-top: 15px;">' +
+                '<button class="btn" onclick="submitResponse(\'' + questionId + '\', \'' + title + '\', \'' + question + '\')">Gedanken festhalten</button>' +
+                '<button class="btn" onclick="removeAllPopups()" style="margin-left: 10px;">Überspringen</button>' +
+                '</div>' +
+                '<div id="aiResponse_' + questionId + '"></div>';
+            
+            document.body.appendChild(popup);
+            
+            // Character counter
+            var textarea = document.getElementById('response_' + questionId);
+            var counter = document.getElementById('counter_' + questionId);
+            
+            textarea.addEventListener('input', function() {
+                counter.textContent = textarea.value.length + '/140';
+            });
+        }
+
+        function submitResponse(questionId, questionType, question) {
+            var textarea = document.getElementById('response_' + questionId);
+            var response = textarea.value.trim();
+            
+            if (!response) {
+                alert('Bitte teile deine Gedanken mit.');
+                return;
+            }
+            
+            userResponses.push({
+                id: questionId,
+                type: questionType,
+                question: question,
+                input: response,
+                userInput: response,
+                response: response,
+                timestamp: new Date()
+            });
+            
+            var aiContainer = document.getElementById('aiResponse_' + questionId);
+            aiContainer.innerHTML = '<div class="ai-response">Danke für deine Reflexion! Diese fließt in dein Arbeitsblatt ein.</div>';
+            
             textarea.disabled = true;
         }
 
-        function showSessionSummary() {
-            var content = '<h3>🎯 Session-Zusammenfassung</h3>';
-            if (userResponses.length === 0) {
-                content += '<p>Noch keine Reflexionen in dieser Session.</p>';
-            } else {
-                content += '<p><strong>Reflexionen:</strong> ' + userResponses.length + '</p>';
-                for (var i = 0; i < userResponses.length; i++) {
-                    var resp = userResponses[i];
-                    content += '<div style="margin: 10px 0; padding: 10px; border-left: 3px solid #4CAF50; background: rgba(76,175,80,0.1);">';
-                    content += '<strong>' + resp.type + ':</strong> ' + resp.input + '</div>';
+        function showScalingPopup(question) {
+            removeAllPopups();
+            
+            var popup = document.createElement('div');
+            popup.className = 'popup';
+            popup.innerHTML = 
+                '<button class="close-btn" onclick="removeAllPopups()">×</button>' +
+                '<h3>📊 Systemische Skalierung</h3>' +
+                '<p><strong>' + question.text + '</strong></p>' +
+                '<p style="font-size: 14px; color: #ccc;">' + question.desc + '</p>' +
+                '<div style="text-align: center; margin: 20px 0;">' +
+                '<input type="range" min="1" max="10" value="5" id="scaleSlider" style="width: 100%; margin: 20px 0;">' +
+                '<div style="font-size: 32px; font-weight: bold; color: #4CAF50; margin: 20px 0;" id="currentVal">5</div>' +
+                '</div>' +
+                '<div style="text-align: center; margin-top: 20px;">' +
+                '<button class="btn" onclick="submitScaling(\'' + question.text + '\')">Wert übernehmen</button>' +
+                '<button class="btn" onclick="removeAllPopups()" style="margin-left: 10px;">Überspringen</button>' +
+                '</div>';
+            
+            document.body.appendChild(popup);
+            
+            var slider = document.getElementById('scaleSlider');
+            var currentVal = document.getElementById('currentVal');
+            
+            slider.addEventListener('input', function() {
+                currentVal.textContent = slider.value;
+            });
+        }
+
+        function submitScaling(questionText) {
+            var slider = document.getElementById('scaleSlider');
+            var value = parseInt(slider.value);
+            
+            userResponses.push({
+                id: 'scaling_' + Date.now(),
+                type: 'Skalierung',
+                question: questionText,
+                input: 'Bewertung: ' + value + '/10',
+                userInput: 'Bewertung: ' + value + '/10',
+                response: 'Bewertung: ' + value + '/10',
+                timestamp: new Date()
+            });
+            
+            removeAllPopups();
+            showPopup('Skalierung gespeichert', 'Deine Bewertung wurde erfasst und fließt in dein Arbeitsblatt ein.');
+        }
+
+        function addPerson() {
+            var personName = prompt('Name der neuen Person:', 'Neue Person');
+            if (!personName || personName.trim() === '') return;
+            
+            var newMember = {
+                id: nextId++,
+                name: personName.trim(),
+                x: 100 + Math.random() * 400,
+                y: 100 + Math.random() * 300,
+                stress: 2
+            };
+            
+            members.push(newMember);
+            
+            for (var i = 0; i < members.length; i++) {
+                var existingMember = members[i];
+                if (existingMember.id !== newMember.id) {
+                    connections.push({
+                        id: Math.min(newMember.id, existingMember.id) + '-' + Math.max(newMember.id, existingMember.id),
+                        member1: newMember.id,
+                        member2: existingMember.id,
+                        emoji: '🤝'
+                    });
                 }
             }
-            showInfoMessage(content);
+            
+            createMembers();
+            updateConnections();
+            updateStats();
+            saveState();
+        }
+
+        function showSessionSummary() {
+            var summaryContent = '<div class="session-summary"><h3>🎯 Session-Zusammenfassung</h3>';
+            
+            if (userResponses.length === 0) {
+                summaryContent += '<p>Noch keine Reflexionen in dieser Session.</p>';
+            } else {
+                summaryContent += '<div class="summary-stats">';
+                summaryContent += '<p><strong>Anzahl Reflexionen:</strong> ' + userResponses.length + '</p>';
+                summaryContent += '<p><strong>Aktuelle Konstellation:</strong> ' + members.length + ' Personen</p>';
+                summaryContent += '</div>';
+                
+                summaryContent += '<div class="responses-list">';
+                for (var i = 0; i < userResponses.length; i++) {
+                    var response = userResponses[i];
+                    summaryContent += '<div class="response-item" style="margin-bottom: 15px; padding: 10px; border-left: 3px solid #4CAF50; background: rgba(76, 175, 80, 0.1);">';
+                    summaryContent += '<h4 style="margin: 0 0 8px 0; color: #2E7D32;">Reflexion ' + (i + 1) + '</h4>';
+                    summaryContent += '<p style="margin: 5px 0;"><strong>Typ:</strong> ' + response.type + '</p>';
+                    if (response.question) {
+                        summaryContent += '<p style="margin: 5px 0;"><strong>Frage:</strong> ' + response.question + '</p>';
+                    }
+                    summaryContent += '<p style="margin: 5px 0;"><strong>Antwort:</strong> ' + (response.input || response.userInput || 'Keine Eingabe gespeichert') + '</p>';
+                    
+                    if (response.timestamp) {
+                        summaryContent += '<p style="margin: 5px 0; font-size: 0.9em; color: #666;"><strong>Zeitpunkt:</strong> ' + new Date(response.timestamp).toLocaleString('de-DE') + '</p>';
+                    }
+                    summaryContent += '</div>';
+                }
+                summaryContent += '</div>';
+            }
+            
+            summaryContent += '</div>';
+            showInfoMessage(summaryContent);
         }
 
         function showInfoMessage(content) {
             removeAllPopups();
-            var popup = document.createElement('div'); popup.className = 'popup';
-            popup.innerHTML = '<button class="close-btn" onclick="removeAllPopups()">×</button>' + content +
-                '<div style="text-align: center; margin-top: 20px;"><button class="btn" onclick="removeAllPopups()">Schließen</button></div>';
+            
+            var popup = document.createElement('div');
+            popup.className = 'popup';
+            popup.style.maxWidth = '600px';
+            popup.style.maxHeight = '80vh';
+            popup.style.overflowY = 'auto';
+            popup.innerHTML = 
+                '<button class="close-btn" onclick="removeAllPopups()">×</button>' +
+                content +
+                '<div style="text-align: center; margin-top: 20px;">' +
+                '<button class="btn" onclick="removeAllPopups()">Schließen</button>' +
+                '</div>';
+            
             document.body.appendChild(popup);
         }
 
@@ -315,6 +318,7 @@
                     return;
                 }
                 
+                var pattern = analyzeUserPattern();
                 var currentDate = new Date();
                 var dateString = currentDate.toLocaleDateString('de-DE');
                 var timeString = currentDate.toLocaleTimeString('de-DE');
@@ -331,60 +335,98 @@
                 worksheetHTML += '.worksheet { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; }';
                 worksheetHTML += 'h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }';
                 worksheetHTML += 'h2 { color: #34495e; margin-top: 25px; }';
-                worksheetHTML += '.constellation-svg { border: 2px solid #3498db; border-radius: 10px; background: #f8f9fa; padding: 20px; margin: 20px 0; }';
+                worksheetHTML += 'h3 { color: #7f8c8d; }';
+                worksheetHTML += '.meta-info { background: #ecf0f1; padding: 15px; border-radius: 5px; margin-bottom: 20px; }';
+                worksheetHTML += '.constellation-svg { border: 2px solid #3498db; border-radius: 10px; background: #f8f9fa; padding: 20px; margin: 20px 0; text-align: center; }';
+                worksheetHTML += '.section { margin: 25px 0; padding: 20px; border-left: 4px solid #4CAF50; background: #f9f9f9; border-radius: 0 10px 10px 0; }';
+                worksheetHTML += '.note-field { margin-top: 15px; padding: 10px; background: #f8f9fa; border: 2px dashed #81C784; border-radius: 8px; }';
+                worksheetHTML += '.note-lines { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }';
+                worksheetHTML += '.note-line { height: 20px; border-bottom: 1px solid #81C784; }';
                 worksheetHTML += '.reflection-entry { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 10px 0; border-radius: 5px; }';
                 worksheetHTML += '.question-block { background: #f8f9fa; border-left: 4px solid #28a745; padding: 15px; margin: 15px 0; }';
-                worksheetHTML += '.answer-space { border: 1px dashed #6c757d; min-height: 80px; padding: 10px; background: white; margin-top: 10px; }';
                 worksheetHTML += '@media print { body { background: white; } .worksheet { box-shadow: none; margin: 0; padding: 20px; } }';
                 worksheetHTML += '</style></head><body>';
                 
                 worksheetHTML += '<div class="worksheet">';
                 worksheetHTML += '<h1>🎯 Systemisches Arbeitsblatt</h1>';
+                
+                worksheetHTML += '<div class="meta-info">';
+                worksheetHTML += '<h3>📋 Session-Informationen</h3>';
                 worksheetHTML += '<p><strong>Erstellt am:</strong> ' + dateString + ' um ' + timeString + '</p>';
+                worksheetHTML += '<p><strong>Anzahl Personen:</strong> ' + members.length + '</p>';
+                worksheetHTML += '<p><strong>Anzahl Reflexionen:</strong> ' + userResponses.length + '</p>';
+                worksheetHTML += '</div>';
                 
                 // SVG-Konstellation einfügen
                 worksheetHTML += '<h2>🎭 Aktuelle Konstellation</h2>';
                 worksheetHTML += '<div class="constellation-svg">' + svgContent + '</div>';
                 
-                // Team-Details
-                worksheetHTML += '<h2>👥 Team-Details</h2>';
-                for (var i = 0; i < members.length; i++) {
-                    var member = members[i];
-                    var stressDesc = ['', 'Sehr entspannt', 'Entspannt', 'Angespannt', 'Sehr angespannt', 'Überlastet'][member.stress];
-                    worksheetHTML += '<p><strong>' + member.name + '</strong> - Stress-Level: ' + member.stress + '/5 (' + stressDesc + ')</p>';
-                }
+                // Selbstpositionierung
+                worksheetHTML += '<div class="section">';
+                worksheetHTML += '<h2>🎭 Deine Selbstpositionierung</h2>';
+                worksheetHTML += '<p><strong>Erkannte Rolle:</strong> ' + pattern.role + '</p>';
+                worksheetHTML += '<p><strong>Dein Stress-Level:</strong> ' + pattern.userStress + '/5</p>';
+                worksheetHTML += '<p><strong>Position im Team:</strong> ' + pattern.position + '</p>';
+                worksheetHTML += '</div>';
                 
-                // Reflexionen
+                // Reflexionen aus der Session
                 if (userResponses.length > 0) {
-                    worksheetHTML += '<h2>💭 Reflexions-Verlauf</h2>';
-                    for (var j = 0; j < userResponses.length; j++) {
-                        var response = userResponses[j];
+                    worksheetHTML += '<div class="section">';
+                    worksheetHTML += '<h2>💬 Deine Reflexionen aus der Session</h2>';
+                    for (var i = 0; i < userResponses.length; i++) {
+                        var resp = userResponses[i];
                         worksheetHTML += '<div class="reflection-entry">';
-                        worksheetHTML += '<h3>Reflexion ' + (j + 1) + ' - ' + response.type + '</h3>';
-                        worksheetHTML += '<p><strong>Antwort:</strong> ' + (response.input || response.userInput || 'Keine Eingabe') + '</p>';
-                        if (response.timestamp) {
-                            worksheetHTML += '<p><small>Zeit: ' + new Date(response.timestamp).toLocaleString('de-DE') + '</small></p>';
+                        worksheetHTML += '<h4 style="color: #1e3c72; margin-bottom: 8px;">' + resp.type + '</h4>';
+                        if (resp.question) {
+                            worksheetHTML += '<p style="font-style: italic; color: #666; margin-bottom: 10px;"><strong>Frage:</strong> ' + resp.question + '</p>';
                         }
+                        worksheetHTML += '<p style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #81C784;"><strong>Deine Antwort:</strong> "' + resp.response + '"</p>';
                         worksheetHTML += '</div>';
                     }
-                }
-                
-                // Reflexionsfragen
-                worksheetHTML += '<h2>🔍 Reflexionsfragen für die Weiterarbeit</h2>';
-                var questions = [
-                    'Welche Person/Rolle hatte den größten Einfluss auf meine Reflexionen?',
-                    'Welche Muster erkenne ich in den Stress-Levels und Beziehungen?',
-                    'Wo sehe ich Entwicklungspotential für das System?',
-                    'Welche konkreten Schritte möchte ich als nächstes umsetzen?'
-                ];
-                
-                for (var k = 0; k < questions.length; k++) {
-                    worksheetHTML += '<div class="question-block">';
-                    worksheetHTML += '<p><strong>' + (k + 1) + '. ' + questions[k] + '</strong></p>';
-                    worksheetHTML += '<div class="answer-space">Ihre Antwort...</div>';
                     worksheetHTML += '</div>';
                 }
                 
+                // Beobachtungsaufträge
+                var tasks = generatePersonalizedTasks(pattern);
+                worksheetHTML += '<div class="section">';
+                worksheetHTML += '<h2>🔍 Beobachtungsaufträge</h2>';
+                
+                for (var i = 0; i < tasks.length; i++) {
+                    worksheetHTML += '<div style="margin: 20px 0;">';
+                    worksheetHTML += '<p>' + tasks[i] + '</p>';
+                    worksheetHTML += '<div class="note-field">';
+                    worksheetHTML += '<strong>📝 Deine Beobachtungen:</strong>';
+                    worksheetHTML += '<div class="note-lines">';
+                    worksheetHTML += '<div class="note-line"></div>';
+                    worksheetHTML += '<div class="note-line"></div>';
+                    worksheetHTML += '<div class="note-line"></div>';
+                    worksheetHTML += '</div>';
+                    worksheetHTML += '</div>';
+                    worksheetHTML += '</div>';
+                }
+                
+                worksheetHTML += '</div>';
+                
+                // Reflexionsfragen
+                var questions = generateSystemicQuestions(pattern);
+                worksheetHTML += '<div class="section">';
+                worksheetHTML += '<h2>💭 Reflexionsfragen</h2>';
+                
+                for (var i = 0; i < questions.length; i++) {
+                    worksheetHTML += '<div class="question-block">';
+                    worksheetHTML += '<p><strong>' + questions[i] + '</strong></p>';
+                    worksheetHTML += '<div class="note-field">';
+                    worksheetHTML += '<strong>📝 Deine Gedanken:</strong>';
+                    worksheetHTML += '<div class="note-lines">';
+                    worksheetHTML += '<div class="note-line"></div>';
+                    worksheetHTML += '<div class="note-line"></div>';
+                    worksheetHTML += '<div class="note-line"></div>';
+                    worksheetHTML += '</div>';
+                    worksheetHTML += '</div>';
+                    worksheetHTML += '</div>';
+                }
+                
+                worksheetHTML += '</div>';
                 worksheetHTML += '</div></body></html>';
                 
                 var blob = new Blob([worksheetHTML], { type: 'text/html;charset=utf-8' });
@@ -397,7 +439,7 @@
                 document.body.removeChild(link);
                 window.URL.revokeObjectURL(url);
                 
-                showPopup('✅ Arbeitsblatt erstellt!', 'Das systemische Arbeitsblatt wurde mit visueller Konstellation heruntergeladen!');
+                showPopup('✅ Arbeitsblatt erstellt!', 'Das systemische Arbeitsblatt wurde mit visueller Konstellation und personalisierten Aufgaben heruntergeladen!');
                 
             } catch (error) {
                 console.error('Fehler beim Export:', error);
@@ -469,98 +511,225 @@
             return svg;
         }
 
-        function saveState() {
-            var state = { members: JSON.parse(JSON.stringify(members)), connections: JSON.parse(JSON.stringify(connections)), timestamp: Date.now() };
-            stateHistory = stateHistory.slice(0, currentStateIndex + 1); stateHistory.push(state);
-            currentStateIndex = stateHistory.length - 1;
-            if (stateHistory.length > 20) { stateHistory.shift(); currentStateIndex--; }
-            updateNavigationButtons();
-        }
-
-        function updateNavigationButtons() {
-            document.getElementById('backBtn').disabled = currentStateIndex <= 0;
-            document.getElementById('forwardBtn').disabled = currentStateIndex >= stateHistory.length - 1;
-        }
-
-        function goBack() {
-            if (currentStateIndex > 0) {
-                currentStateIndex--; var state = stateHistory[currentStateIndex];
-                members = JSON.parse(JSON.stringify(state.members)); connections = JSON.parse(JSON.stringify(state.connections));
-                createMembers(); updateConnections(); updateStats(); updateNavigationButtons();
+        function analyzeUserPattern() {
+            var avgStress = members.reduce(function(sum, m) { return sum + m.stress; }, 0) / members.length;
+            var userMember = members[0]; // Erste Person als "User"
+            var userStress = userMember.stress;
+            
+            var centerX = 400, centerY = 300;
+            var userDistance = Math.sqrt(Math.pow(userMember.x - centerX, 2) + Math.pow(userMember.y - centerY, 2));
+            var position = userDistance < 150 ? "zentral" : userDistance < 300 ? "aktiv" : "zurückhaltend";
+            
+            var role = "Teammitglied";
+            var focus = "Entwicklung";
+            
+            if (userStress >= 4 && position === "zentral") {
+                role = "Harmonisiererin";
+                focus = "Abgrenzung und Selbstfürsorge";
+            } else if (userStress >= 4 && position === "aktiv") {
+                role = "Antreiberin";
+                focus = "Vertrauen und Delegation";
+            } else if (userStress <= 2 && position === "zurückhaltend") {
+                role = "Beobachterin";
+                focus = "Sichtbarkeit und Initiative";
+            } else if (userStress >= 3 && avgStress < userStress) {
+                role = "Sorgenträgerin";
+                focus = "Emotionale Entlastung";
             }
+            
+            return { role: role, position: position, userStress: userStress, focus: focus };
         }
 
-        function goForward() {
-            if (currentStateIndex < stateHistory.length - 1) {
-                currentStateIndex++; var state = stateHistory[currentStateIndex];
-                members = JSON.parse(JSON.stringify(state.members)); connections = JSON.parse(JSON.stringify(state.connections));
-                createMembers(); updateConnections(); updateStats(); updateNavigationButtons();
+        function generatePersonalizedTasks(pattern) {
+            var allTasks = {
+                "Harmonisiererin": [
+                    "Beobachte eine Woche lang: Wann übernimmst du automatisch eine vermittelnde Position?",
+                    "Experimentiere: Sage 1x diese Woche 'Das besprechen Sie bitte direkt miteinander'",
+                    "Frage dich: Was passiert, wenn du mal 5 Minuten wartest, bevor du eingreifst?"
+                ],
+                "Antreiberin": [
+                    "Beobachte: In welchen Momenten übergehst du andere mit deinem Tempo?",
+                    "Experimentiere: Warte bei der nächsten Entscheidung bewusst auf andere Meinungen",
+                    "Frage dich: Was passiert, wenn andere langsamer sind als du?"
+                ],
+                "Beobachterin": [
+                    "Beobachte: Wann hast du Impulse, dich einzubringen, tust es aber nicht?",
+                    "Experimentiere: Äußere 1x täglich eine Meinung, bevor andere sprechen",
+                    "Frage dich: Was würde passieren, wenn du sichtbarer wärst?"
+                ],
+                "Sorgenträgerin": [
+                    "Beobachte: Welche Sorgen von anderen trägst du mit?",
+                    "Experimentiere: Gib 1x eine Sorge an die Person zurück, der sie gehört",
+                    "Frage dich: Was müsste passieren, damit andere ihre eigenen Sorgen tragen?"
+                ]
+            };
+            
+            return allTasks[pattern.role] || allTasks["Harmonisiererin"];
+        }
+
+        function generateSystemicQuestions(pattern) {
+            var allQuestions = {
+                "Harmonisiererin": [
+                    "Wer hat dir diese Vermittlerrolle ursprünglich übertragen?",
+                    "Was befürchtest du, würde passieren, wenn du nicht mehr vermittelst?",
+                    "Wenn du für eine Woche 'Urlaub' von dieser Rolle hättest - wer würde es merken?"
+                ],
+                "Antreiberin": [
+                    "Woher kommt dein innerer Antrieb? Wessen Stimme hörst du da?",
+                    "Wann kannst du dein Tempo drosseln, ohne Angst zu haben?",
+                    "Wie würde das Team deine 'langsamere Version' erleben?"
+                ],
+                "Beobachterin": [
+                    "Was ist der Wert deiner beobachtenden Position für das Team?",
+                    "Was müsste im Team anders sein, damit du dich sicherer zeigen könntest?",
+                    "Welche wichtigen Dinge siehst du, die andere übersehen?"
+                ],
+                "Sorgenträgerin": [
+                    "Von wem hast du gelernt, dass du für andere mitverantwortlich bist?",
+                    "Wem würdest du zutrauen, seine eigenen Sorgen zu tragen?",
+                    "Wie würde sich Erleichterung für dich im Team anfühlen?"
+                ]
+            };
+            
+            return allQuestions[pattern.role] || allQuestions["Harmonisiererin"];
+        }
+
+        function showPopup(title, message) {
+            removeAllPopups();
+            
+            var popup = document.createElement('div');
+            popup.className = 'popup';
+            popup.innerHTML = 
+                '<button class="close-btn" onclick="removeAllPopups()">×</button>' +
+                '<h3>' + title + '</h3>' +
+                '<div>' + message + '</div>' +
+                '<div style="text-align: center; margin-top: 15px;">' +
+                '<button class="btn" onclick="removeAllPopups()">Verstanden</button>' +
+                '</div>';
+            
+            document.body.appendChild(popup);
+            
+            setTimeout(function() {
+                removeAllPopups();
+            }, 8000);
+        }
+
+        function removeAllPopups() {
+            var popups = document.querySelectorAll('.popup');
+            for (var i = 0; i < popups.length; i++) {
+                popups[i].remove();
             }
         }
 
         function resetAll() {
-            if (confirm('Neue Session beginnen?')) {
+            if (confirm('Möchtest du wirklich eine neue Session beginnen? Alle aktuellen Daten gehen verloren.')) {
                 members = [
                     { id: 1, name: 'Anna\n(Projektleitung)', x: 200, y: 150, stress: 4 },
                     { id: 2, name: 'Marcus\n(Entwicklung)', x: 400, y: 250, stress: 3 },
                     { id: 3, name: 'Sarah\n(Design)', x: 300, y: 400, stress: 1 },
                     { id: 4, name: 'Tom\n(QA)', x: 600, y: 200, stress: 2 }
                 ];
-                nextId = 5; userResponses = []; stateHistory = []; currentStateIndex = -1;
-                initConnections(); createMembers(); updateConnections(); updateStats(); saveState();
-                showPopup('Reset!', 'Neue Session gestartet.');
+                nextId = 5;
+                userResponses = [];
+                stateHistory = [];
+                currentStateIndex = -1;
+                
+                initConnections();
+                createMembers();
+                updateConnections();
+                updateStats();
+                saveState();
+                
+                showPopup('Neue Session gestartet!', 'Du kannst jetzt eine frische Reflexion beginnen.');
             }
         }
 
-        // BACKUP SYSTEM
+        // Backup-System Funktionen
         function toggleBackupMenu() {
-            var menu = document.getElementById('backupMenu'), overlay = document.getElementById('menuOverlay');
-            if (backupMenuOpen) { closeBackupMenu(); } 
-            else { menu.classList.add('open'); overlay.classList.add('open'); backupMenuOpen = true; updateBackupList(); }
+            var menu = document.getElementById('backupMenu');
+            var overlay = document.getElementById('menuOverlay');
+            
+            if (backupMenuOpen) {
+                closeBackupMenu();
+            } else {
+                menu.classList.add('open');
+                overlay.classList.add('open');
+                backupMenuOpen = true;
+                updateBackupList();
+            }
         }
 
         function closeBackupMenu() {
-            var menu = document.getElementById('backupMenu'), overlay = document.getElementById('menuOverlay');
-            menu.classList.remove('open'); overlay.classList.remove('open'); backupMenuOpen = false;
+            var menu = document.getElementById('backupMenu');
+            var overlay = document.getElementById('menuOverlay');
+            
+            menu.classList.remove('open');
+            overlay.classList.remove('open');
+            backupMenuOpen = false;
         }
 
         function saveCurrentState() {
-            var nameInput = document.getElementById('backupNameInput'), sessionName = nameInput.value.trim();
-            if (!sessionName) { alert('Bitte Session-Namen eingeben.'); return; }
+            var nameInput = document.getElementById('backupNameInput');
+            var sessionName = nameInput.value.trim();
+            
+            if (!sessionName) {
+                alert('Bitte gib einen Namen für die Session ein.');
+                return;
+            }
             
             var currentState = {
-                id: 'backup_' + Date.now(), name: sessionName, timestamp: new Date(),
-                members: JSON.parse(JSON.stringify(members)), connections: JSON.parse(JSON.stringify(connections)),
+                id: 'backup_' + Date.now(),
+                name: sessionName,
+                timestamp: new Date(),
+                members: JSON.parse(JSON.stringify(members)),
+                connections: JSON.parse(JSON.stringify(connections)),
                 userResponses: JSON.parse(JSON.stringify(userResponses)),
-                stressStats: { avgStress: members.reduce((sum, m) => sum + m.stress, 0) / members.length, overloaded: members.filter(m => m.stress >= 4).length }
+                stressStats: {
+                    avgStress: members.reduce(function(sum, m) { return sum + m.stress; }, 0) / members.length,
+                    overloaded: members.filter(function(m) { return m.stress >= 4; }).length
+                }
             };
             
-            savedStates.push(currentState); nameInput.value = ''; updateBackupList();
-            showPopup('Session gespeichert! 💾', 'Session "' + sessionName + '" wurde gespeichert.');
+            savedStates.push(currentState);
+            nameInput.value = '';
+            updateBackupList();
+            
+            showPopup('Session gespeichert! 💾', 'Die Session "' + sessionName + '" wurde erfolgreich gespeichert.');
         }
 
         function loadState(stateId) {
-            var state = savedStates.find(s => s.id === stateId);
+            var state = savedStates.find(function(s) { return s.id === stateId; });
             if (!state) return;
+            
             if (confirm('Session "' + state.name + '" laden? Aktuelle Änderungen gehen verloren.')) {
-                members = JSON.parse(JSON.stringify(state.members)); connections = JSON.parse(JSON.stringify(state.connections));
+                members = JSON.parse(JSON.stringify(state.members));
+                connections = JSON.parse(JSON.stringify(state.connections));
                 userResponses = JSON.parse(JSON.stringify(state.userResponses));
-                createMembers(); updateConnections(); updateStats(); saveState(); closeBackupMenu();
-                showPopup('Session geladen! 📁', 'Session "' + state.name + '" wurde geladen.');
+                
+                createMembers();
+                updateConnections();
+                updateStats();
+                saveState();
+                
+                closeBackupMenu();
+                showPopup('Session geladen! 📁', 'Die Session "' + state.name + '" wurde erfolgreich geladen.');
             }
         }
 
         function deleteState(stateId) {
-            var state = savedStates.find(s => s.id === stateId);
+            var state = savedStates.find(function(s) { return s.id === stateId; });
             if (!state) return;
+            
             if (confirm('Session "' + state.name + '" wirklich löschen?')) {
-                savedStates = savedStates.filter(s => s.id !== stateId); updateBackupList();
-                showPopup('Session gelöscht', 'Session wurde entfernt.');
+                savedStates = savedStates.filter(function(s) { return s.id !== stateId; });
+                updateBackupList();
+                showPopup('Session gelöscht', 'Die Session wurde erfolgreich entfernt.');
             }
         }
 
         function updateBackupList() {
             var listContainer = document.getElementById('backupList');
+            
             if (savedStates.length === 0) {
                 listContainer.innerHTML = '<p style="color: #ccc; font-style: italic; text-align: center; padding: 20px;">Noch keine Sessions gespeichert</p>';
                 return;
@@ -570,35 +739,824 @@
             for (var i = savedStates.length - 1; i >= 0; i--) {
                 var state = savedStates[i];
                 var timeString = state.timestamp.toLocaleDateString('de-DE') + ' ' + state.timestamp.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'});
-                listHTML += '<div class="backup-item"><div class="backup-item-title">' + state.name + '</div>' +
-                    '<div class="backup-item-info"><span>' + timeString + '</span>' +
-                    '<div class="backup-actions"><button class="backup-btn" onclick="loadState(\'' + state.id + '\')">Laden</button>' +
-                    '<button class="backup-btn delete" onclick="deleteState(\'' + state.id + '\')">Löschen</button></div></div>' +
+                
+                listHTML += '<div class="backup-item">' +
+                    '<div class="backup-item-title">' + state.name + '</div>' +
+                    '<div class="backup-item-info">' +
+                        '<span>' + timeString + '</span>' +
+                        '<div class="backup-actions">' +
+                            '<button class="backup-btn" onclick="loadState(\'' + state.id + '\')">Laden</button>' +
+                            '<button class="backup-btn delete" onclick="deleteState(\'' + state.id + '\')">Löschen</button>' +
+                        '</div>' +
+                    '</div>' +
                     '<div style="font-size: 11px; color: #aaa; margin-top: 5px;">' +
-                    state.members.length + ' Personen, Ø Stress: ' + state.stressStats.avgStress.toFixed(1) + '/5, ' +
-                    state.userResponses.length + ' Reflexionen</div></div>';
+                        state.members.length + ' Personen, Ø Stress: ' + state.stressStats.avgStress.toFixed(1) + '/5, ' +
+                        state.userResponses.length + ' Reflexionen' +
+                    '</div>' +
+                '</div>';
             }
+            
             listContainer.innerHTML = listHTML;
         }
 
-        function showPopup(title, message) {
-            removeAllPopups();
-            var popup = document.createElement('div'); popup.className = 'popup';
-            popup.innerHTML = '<button class="close-btn" onclick="removeAllPopups()">×</button><h3>' + title + '</h3><div>' + message + '</div>' +
-                '<div style="text-align: center; margin-top: 15px;"><button class="btn" onclick="removeAllPopups()">Verstanden</button></div>';
-            document.body.appendChild(popup);
-            setTimeout(() => removeAllPopups(), 8000);
-        }
-
-        function removeAllPopups() {
-            var popups = document.querySelectorAll('.popup');
-            for (var i = 0; i < popups.length; i++) popups[i].remove();
-        }
-
+        // Start the app
         window.addEventListener('load', init);
+        
+        // Prevent context menu on team members
         document.addEventListener('contextmenu', function(e) {
-            if (e.target.closest('.team-member')) e.preventDefault();
+            if (e.target.closest('.team-member')) {
+                e.preventDefault();
+            }
         });
+        
     </script>
 </body>
-</html>
+</html><!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reflexions-Radar - Systemische Selbstreflexion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .settings-icon {
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .settings-icon:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(45deg);
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 13px;
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn.export-btn {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(69, 160, 73, 0.3));
+            border: 1px solid rgba(76, 175, 80, 0.4);
+            font-weight: bold;
+        }
+
+        /* Backup Menu Styles */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .menu-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .backup-menu {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 350px;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+            padding: 30px;
+            overflow-y: auto;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .backup-menu.open {
+            transform: translateX(0);
+        }
+
+        .save-new-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .backup-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .backup-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .backup-item {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .backup-item-title {
+            font-weight: bold;
+            color: #81C784;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .backup-item-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .backup-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .backup-btn {
+            padding: 4px 12px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            color: white;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .backup-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .backup-btn.delete {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.5);
+        }
+
+        .backup-btn.delete:hover {
+            background: rgba(244, 67, 54, 0.5);
+        }
+
+        .workspace {
+            position: relative;
+            height: calc(100vh - 100px);
+            overflow: hidden;
+        }
+
+        .team-member {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            font-weight: bold;
+            text-align: center;
+            font-size: 12px;
+            user-select: none;
+            width: 100px;
+            height: 100px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+
+        .team-member:hover {
+            transform: scale(1.05);
+        }
+
+        .stress-1 { background: linear-gradient(135deg, rgba(46, 125, 50, 0.8), rgba(76, 175, 80, 0.8)); }
+        .stress-2 { background: linear-gradient(135deg, rgba(104, 159, 56, 0.8), rgba(139, 195, 74, 0.8)); }
+        .stress-3 { background: linear-gradient(135deg, rgba(255, 152, 0, 0.8), rgba(255, 183, 77, 0.8)); }
+        .stress-4 { background: linear-gradient(135deg, rgba(245, 124, 0, 0.8), rgba(255, 143, 0, 0.8)); }
+        .stress-5 { 
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.8), rgba(239, 83, 80, 0.8));
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .connection-line {
+            position: absolute;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.4);
+            transform-origin: left center;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        .connection-emoji {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .popup h3 {
+            color: #81C784;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-width: 200px;
+        }
+
+        .legend h4 {
+            margin-bottom: 15px;
+            color: #81C784;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .legend-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .stats {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .text-response-area {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-size: 14px;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        .char-counter {
+            text-align: right;
+            font-size: 12px;
+            color: #ccc;
+            margin-top: 5px;
+        }
+
+        .ai-response {
+            background: rgba(129, 199, 132, 0.2);
+            border-left: 4px solid #81C784;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 10px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">🎯 Reflexions-Radar</div>
+            <div class="settings-icon" onclick="toggleBackupMenu()">⚙️</div>
+        </div>
+        <div class="controls">
+            <button class="btn" id="reflectionBtn">💭 Reflexion</button>
+            <button class="btn" id="scalingBtn">📊 Skalierung</button>
+            <button class="btn" id="wonderBtn">✨ Wunderfrage</button>
+            <button class="btn" id="addPersonBtn">+ Person</button>
+            <button class="btn" id="backBtn">↩️ Zurück</button>
+            <button class="btn" id="forwardBtn">↪️ Vorwärts</button>
+            <button class="btn" id="sessionBtn">📄 Session</button>
+            <button class="btn export-btn" id="worksheetBtn">📋 Arbeitsblatt</button>
+            <button class="btn" id="resetBtn">🔄 Reset</button>
+        </div>
+    </div>
+
+    <!-- Backup Menu Overlay -->
+    <div class="menu-overlay" id="menuOverlay" onclick="closeBackupMenu()"></div>
+    
+    <!-- Backup Menu -->
+    <div class="backup-menu" id="backupMenu">
+        <h3>
+            ⚙️ Session-Verwaltung
+            <button class="close-btn" onclick="closeBackupMenu()" style="position: absolute; top: 15px; right: 15px;">×</button>
+        </h3>
+        
+        <div class="save-new-section">
+            <h4 style="color: white; margin-bottom: 10px;">💾 Aktuelle Session speichern</h4>
+            <input type="text" class="backup-input" id="backupNameInput" placeholder="Session-Name eingeben..." maxlength="30">
+            <button class="btn" onclick="saveCurrentState()" style="width: 100%; margin-top: 5px;">Speichern</button>
+        </div>
+        
+        <div>
+            <h4 style="color: white; margin-bottom: 15px;">📁 Gespeicherte Sessions</h4>
+            <div id="backupList">
+                <p style="color: #ccc; font-style: italic; text-align: center; padding: 20px;">
+                    Noch keine Sessions gespeichert
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="workspace" id="workspace">
+        <div class="legend">
+            <h4>Stress-Level</h4>
+            <div class="legend-item">
+                <div class="legend-circle stress-1"></div>
+                <span>1 - Sehr entspannt</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle stress-2"></div>
+                <span>2 - Entspannt</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle stress-3"></div>
+                <span>3 - Angespannt</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle stress-4"></div>
+                <span>4 - Sehr angespannt</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle stress-5"></div>
+                <span>5 - Überlastet</span>
+            </div>
+            <div style="margin-top: 15px; font-size: 11px; color: #ccc;">
+                💡 Doppelklick = Stress ändern<br>
+                🖱️ Halten & Ziehen = Position ändern<br>
+                🔗 Linie klicken = Beziehung bearbeiten
+            </div>
+        </div>
+
+        <div class="stats">
+            <h4 style="color: #81C784; margin-bottom: 10px;">Reflexions-Impulse</h4>
+            <div style="font-size: 12px; line-height: 1.4;">
+                <div>Durchschnittlicher Stress: <span id="avgStress">Mittel</span></div>
+                <div>Belastete Bereiche: <span id="overloaded">1</span></div>
+                <div style="margin-top: 10px; color: #ccc;">
+                    💭 Betrachte deine Position<br>
+                    🎯 Erkenne Muster<br>
+                    🌱 Reflektiere deinen Beitrag
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        var members = [
+            { id: 1, name: 'Anna\n(Projektleitung)', x: 200, y: 150, stress: 4 },
+            { id: 2, name: 'Marcus\n(Entwicklung)', x: 400, y: 250, stress: 3 },
+            { id: 3, name: 'Sarah\n(Design)', x: 300, y: 400, stress: 1 },
+            { id: 4, name: 'Tom\n(QA)', x: 600, y: 200, stress: 2 }
+        ];
+        
+        var connections = [];
+        var nextId = 5;
+        var isDragging = false;
+        var dragElement = null;
+        var dragOffset = { x: 0, y: 0 };
+        var userResponses = [];
+        var stateHistory = [];
+        var currentStateIndex = -1;
+        var savedStates = [];
+        var backupMenuOpen = false;
+
+        // Interaction variables
+        var clickCount = 0;
+        var clickTimer = null;
+        var holdTimer = null;
+        var isHolding = false;
+        var startPos = { x: 0, y: 0 };
+
+        var reflections = [
+            "🪞 Welche Rolle übernimmst du normalerweise in stressigen Teamsituationen?",
+            "💭 Was ist dein automatisches Verhalten, wenn im Team Spannungen entstehen?",
+            "🌱 Wofür ist deine Position im Team nützlich - auch wenn sie manchmal anstrengend ist?",
+            "👁️ Welche Muster bei dir wiederholen sich in verschiedenen Teams?",
+            "💪 Wann warst du zuletzt überrascht von deiner eigenen Wirkung im Team?"
+        ];
+
+        var wonderQuestions = [
+            "✨ Stell dir vor, morgen wachst du auf und fühlst dich im Team völlig authentisch. Was wäre das erste Zeichen?",
+            "🌟 Wenn alle Teamspannungen verschwinden würden - welche deiner Stärken würden sichtbarer?",
+            "💫 Du wachst morgen auf und hast die ideale Teamrolle. Wie würde dein Arbeitsalltag aussehen?"
+        ];
+
+        var scalingQuestions = [
+            { text: 'Wie authentisch kannst du aktuell im Team sein?', desc: '1 = Verstelle mich stark, 10 = Völlig authentisch' },
+            { text: 'Wie wohl fühlst du dich mit deiner aktuellen Teamrolle?', desc: '1 = Sehr unwohl, 10 = Völlig wohl' },
+            { text: 'Wie stark fühlst du dich emotional mit dem Team verbunden?', desc: '1 = Gar nicht verbunden, 10 = Sehr verbunden' }
+        ];
+
+        function init() {
+            try {
+                initConnections();
+                createMembers();
+                updateConnections();
+                updateStats();
+                saveState();
+                
+                // Event listeners für Buttons
+                document.getElementById('reflectionBtn').addEventListener('click', showReflection);
+                document.getElementById('scalingBtn').addEventListener('click', showScaling);
+                document.getElementById('wonderBtn').addEventListener('click', showWonder);
+                document.getElementById('addPersonBtn').addEventListener('click', addPerson);
+                document.getElementById('backBtn').addEventListener('click', goBack);
+                document.getElementById('forwardBtn').addEventListener('click', goForward);
+                document.getElementById('sessionBtn').addEventListener('click', showSessionSummary);
+                document.getElementById('worksheetBtn').addEventListener('click', exportSystemicWorksheet);
+                document.getElementById('resetBtn').addEventListener('click', resetAll);
+                
+                setTimeout(function() {
+                    showPopup('Willkommen beim Reflexions-Radar! 🎯', 
+                        'Bedienung:<br>' +
+                        '• Doppelklick auf Kreise: Stress-Level ändern<br>' +
+                        '• Kreis gedrückt halten: Position verschieben<br>' +
+                        '• Linien anklicken: Beziehungen charakterisieren<br>' +
+                        '• Reflexionsfragen nutzen: Für tiefere Einsichten<br>' +
+                        '• ⚙️ Zahnrad: Sessions speichern & laden<br>' +
+                        '• Arbeitsblatt erstellen: Mit Notizfeldern');
+                }, 1000);
+            } catch (error) {
+                console.error('Init error:', error);
+            }
+        }
+
+        function saveState() {
+            var state = {
+                members: JSON.parse(JSON.stringify(members)),
+                connections: JSON.parse(JSON.stringify(connections)),
+                timestamp: Date.now()
+            };
+            
+            stateHistory = stateHistory.slice(0, currentStateIndex + 1);
+            stateHistory.push(state);
+            currentStateIndex = stateHistory.length - 1;
+            
+            if (stateHistory.length > 20) {
+                stateHistory.shift();
+                currentStateIndex--;
+            }
+            
+            updateNavigationButtons();
+        }
+
+        function updateNavigationButtons() {
+            var backBtn = document.getElementById('backBtn');
+            var forwardBtn = document.getElementById('forwardBtn');
+            
+            backBtn.disabled = currentStateIndex <= 0;
+            forwardBtn.disabled = currentStateIndex >= stateHistory.length - 1;
+        }
+
+        function goBack() {
+            if (currentStateIndex > 0) {
+                currentStateIndex--;
+                var state = stateHistory[currentStateIndex];
+                
+                members = JSON.parse(JSON.stringify(state.members));
+                connections = JSON.parse(JSON.stringify(state.connections));
+                
+                createMembers();
+                updateConnections();
+                updateStats();
+                updateNavigationButtons();
+            }
+        }
+
+        function goForward() {
+            if (currentStateIndex < stateHistory.length - 1) {
+                currentStateIndex++;
+                var state = stateHistory[currentStateIndex];
+                
+                members = JSON.parse(JSON.stringify(state.members));
+                connections = JSON.parse(JSON.stringify(state.connections));
+                
+                createMembers();
+                updateConnections();
+                updateStats();
+                updateNavigationButtons();
+            }
+        }
+
+        function initConnections() {
+            connections = [];
+            for (var i = 0; i < members.length; i++) {
+                for (var j = i + 1; j < members.length; j++) {
+                    connections.push({
+                        id: members[i].id + '-' + members[j].id,
+                        member1: members[i].id,
+                        member2: members[j].id,
+                        emoji: '🤝'
+                    });
+                }
+            }
+        }
+
+        function createMembers() {
+            var workspace = document.getElementById('workspace');
+            var existingMembers = workspace.querySelectorAll('.team-member');
+            for (var i = 0; i < existingMembers.length; i++) {
+                existingMembers[i].remove();
+            }
+            
+            for (var i = 0; i < members.length; i++) {
+                var member = members[i];
+                var div = document.createElement('div');
+                div.className = 'team-member stress-' + member.stress;
+                div.style.left = member.x + 'px';
+                div.style.top = member.y + 'px';
+                div.style.position = 'absolute';
+                div.textContent = member.name;
+                div.dataset.id = member.id;
+                
+                div.addEventListener('mousedown', handleInteractionStart);
+                div.addEventListener('touchstart', handleInteractionStart);
+                
+                workspace.appendChild(div);
+            }
+        }
+
+        function handleInteractionStart(e) {
+            e.preventDefault();
+            
+            var element = e.target.closest('.team-member');
+            var clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            var clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            startPos = { x: clientX, y: clientY };
+            isHolding = false;
+            
+            clickCount++;
+            if (clickCount === 1) {
+                clickTimer = setTimeout(function() {
+                    clickCount = 0;
+                    startHoldTimer(element, e);
+                }, 300);
+            } else if (clickCount === 2) {
+                clearTimeout(clickTimer);
+                clearTimeout(holdTimer);
+                clickCount = 0;
+                changeStress(e);
+                return;
+            }
+            
+            document.addEventListener('mousemove', checkMovement);
+            document.addEventListener('mouseup', handleInteractionEnd);
+        }
+
+        function startHoldTimer(element, originalEvent) {
+            holdTimer = setTimeout(function() {
+                isHolding = true;
+                startDrag(originalEvent);
+            }, 600);
+        }
+
+        function checkMovement(e) {
+            var clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            var clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            var distance = Math.sqrt(
+                Math.pow(clientX - startPos.x, 2) + 
+                Math.pow(clientY - startPos.y, 2)
+            );
+            
+            if (distance > 15) {
+                clearTimeout(holdTimer);
+                clearTimeout(clickTimer);
+                clickCount = 0;
+            }
+        }
+
+        function handleInteractionEnd(e) {
+            clearTimeout(holdTimer);
+            
+            document.removeEventListener('mousemove', checkMovement);
+            document.removeEventListener('mouseup', handleInteractionEnd);
+            
+            if (isDragging) {
+                stopDrag();
+            }
+        }
+
+        function startDrag(e) {
+            isDragging = true;
+            dragElement = e.target.closest('.team-member');
+            
+            var rect = dragElement.getBoundingClientRect();
+            var clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            var clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            dragOffset.x = clientX - rect.left;
+            dragOffset.y = clientY - rect.top;
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+
+        function drag(e) {
+            if (!isDragging || !dragElement) return;
+            
+            var workspace = document.getElementById('workspace');
+            var workspaceRect = workspace.getBoundingClientRect();
+            
+            var clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            var clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            var newX = clientX - workspaceRect.left - dragOffset.x;
+            var newY = clientY - workspaceRect.top - dragOffset.y;
+            
+            newX = Math.max(0, Math.min(newX, workspaceRect.width - 100));
+            newY = Math.max(0, Math.min(newY, workspaceRect.height - 100));
+            
+            dragElement.style.left = newX + 'px';
+            dragElement.style.top = newY + 'px';
+            
+            var memberId = parseInt(dragElement.dataset.id);
+            var member = members.find(function(m) { return m.id === memberId; });
+            if (member) {
+                member.x = newX;
+                member.y = newY;
+            }
+            
+            updateConnections();
+        }
+
+        function stopDrag() {
+            if (isDragging) {
+                saveState();
+            }
+            
+            isDragging = false;
+            dragElement = null;
+            
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+
+        function changeStress(e) {
+            if (isDragging || isHolding) return;
+            
+            e.stopPropagation();
+            
+            var memberId = parseInt(e.target.closest('.team-member').dataset.id);
+            var member = members.find(function(m) { return m.id === memberId; });
+            
+            if (member) {
+                member.stress = (member.stress % 5) + 1;
+                e.target.closest('.team-member').className = 'team-member stress-' + member.stress;
+                updateStats();
+                saveState();
+            }
+        }
+
+        function updateConnections() {
+            var workspace = document.getElementById('workspace');
+            var existingLines = workspace.querySelectorAll('.connection-line, .connection-emoji');
+            
