@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reflexions-Radar - Systemische Selbstreflexion</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: white;
+    }
+
+    .header {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .logo {
+        font-size: 24px;
+        font-weight: bold;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .controls {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 25px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 13px;
+        white-space: nowrap;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn.export-btn {
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(69, 160, 73, 0.3));
+        border: 1px solid rgba(76, 175, 80, 0.4);
+        font-weight: bold;
+    }
+
+    .btn.export-btn:hover {
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.4), rgba(69, 160, 73, 0.4));
+        box-shadow: 0 6px 25px rgba(76, 175, 80, 0.3);
+    }
+
+    .workspace {
+        position: relative;
+        height: calc(100vh - 100px);
+        overflow: hidden;
+    }
+
+    .team-member {
+        position: absolute;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(15px);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        font-weight: bold;
+        text-align: center;
+        font-size: 12px;
+        user-select: none;
+        width: 100px;
+        height: 100px;
+        white-space: pre-line;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    }
+
+    .team-member:hover {
+        transform: scale(1.05);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .team-member.dragging {
+        transform: scale(1.1);
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+    }
+
+    .stress-1 { 
+        background: linear-gradient(135deg, rgba(46, 125, 50, 0.8), rgba(76, 175, 80, 0.8));
+        border-color: rgba(76, 175, 80, 0.5);
+    }
+    .stress-2 { 
+        background: linear-gradient(135deg, rgba(104, 159, 56, 0.8), rgba(139, 195, 74, 0.8));
+        border-color: rgba(139, 195, 74, 0.5);
+    }
+    .stress-3 { 
+        background: linear-gradient(135deg, rgba(255, 152, 0, 0.8), rgba(255, 183, 77, 0.8));
+        border-color: rgba(255, 183, 77, 0.5);
+    }
+    .stress-4 { 
+        background: linear-gradient(135deg, rgba(245, 124, 0, 0.8), rgba(255, 143, 0, 0.8));
+        border-color: rgba(255, 143, 0, 0.5);
+    }
+    .stress-5 { 
+        background: linear-gradient(135deg, rgba(244, 67, 54, 0.8), rgba(239, 83, 80, 0.8));
+        border-color: rgba(239, 83, 80, 0.5);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    .connection-line {
+        position: absolute;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.4);
+        transform-origin: left center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border-radius: 2px;
+        backdrop-filter: blur(5px);
+        z-index: 10;
+    }
+
+    .connection-line:hover {
+        background: rgba(255, 255, 255, 0.6);
+        box-shadow: 0 2px 10px rgba(255, 255, 255, 0.2);
+    }
+
+    .connection-emoji {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        padding: 6px 10px;
+        border-radius: 15px;
+        font-size: 16px;
+        cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(10px);
+        z-index: 100;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+        user-select: none;
+        transform: translate(-50%, -50%);
+    }
+
+    .connection-emoji:hover {
+        background: rgba(0, 0, 0, 0.8);
+        transform: translate(-50%, -50%) scale(1.1);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 30px;
+        border-radius: 20px;
+        max-width: 500px;
+        z-index: 1000;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .popup h3 {
+        color: #81C784;
+        margin-bottom: 15px;
+        font-size: 18px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .popup p, .popup div {
+        line-height: 1.6;
+        margin-bottom: 15px;
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        font-size: 18px;
+        cursor: pointer;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+        user-select: none;
+    }
+
+    .close-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.1);
+    }
+
+    .legend {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 20px;
+        border-radius: 20px;
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        min-width: 200px;
+        max-width: 250px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        font-size: 12px;
+        user-select: none;
+    }
+
+    .legend h4 {
+        margin-bottom: 15px;
+        color: #81C784;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        font-weight: 700;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .legend-circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .stats {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 15px;
+        border-radius: 20px;
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        max-width: 300px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        font-size: 12px;
+        user-select: none;
+    }
+
+    .text-response-area {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 12px;
+        border-radius: 10px;
+        margin: 15px 0;
+        font-size: 14px;
+        resize: vertical;
+        min-height: 80px;
+        font-family: inherit;
+        backdrop-filter: blur(10px);
+    }
+
+    .text-response-area::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .ai-response {
+        background: rgba(129, 199, 132, 0.2);
+        border-left: 4px solid #81C784;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 10px;
+        font-style: italic;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(129, 199, 132, 0.3);
+    }
+
+    .delete-btn {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: rgba(244, 67, 54, 0.8);
+        color: white;
+        border: 1px solid rgba(244, 67, 54, 0.6);
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        font-size: 12px;
+        cursor: pointer;
+        display: none;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+        user-select: none;
+    }
+
+    .delete-btn:hover {
+        background: rgba(244, 67, 54, 1);
+        transform: scale(1.1);
+    }
+
+    .team-member:hover .delete-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    @media (max-width: 768px) {
+        .header {
+            flex-direction: column;
+            gap: 15px;
+            padding: 10px 15px;
+        }
+        
+        .controls {
+            justify-content: center;
+            width: 100%;
+        }
+        
+        .btn {
+            font-size: 11px;
+            padding: 6px 12px;
+        }
+        
+        .team-member {
+            width: 60px;
+            height: 60px;
+            font-size: 10px;
+            white-space: normal;
+        }
+        
+        .legend, .stats {
+            position: relative;
+            margin: 10px;
+            max-width: none;
+        }
+        
+        .workspace {
+            height: auto;
+            min-height: 400px;
+            padding: 10px;
+        }
+        
+        .popup {
+            width: 95%;
+            max-width: 400px;
+            padding: 20px;
+            margin: 10px;
+        }
+    }
+</style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎯 Reflexions-Radar</div>
+        <div class="controls">
+            <button class="btn" onclick="showReflection()">💭 Reflexion</button>
+            <button class="btn" onclick="showScaling()">📊 Skalierung</button>
+            <button class="btn" onclick="showWonder()">✨ Wunderfrage</button>
+            <button class="btn" onclick="addPerson()">+ Person</button>
+            <button class="btn" onclick="goBack()" id="backBtn">↩️ Zurück</button>
+            <button class="btn" onclick="goForward()" id="forwardBtn">↪️ Vorwärts</button>
+            <button class="btn" onclick="showSessionSummary()">📄 Session</button>
+            <button class="btn export-btn" onclick="exportSystemicWorksheet()">📋 Arbeitsblatt</button>
+            <button class="btn" onclick="resetAll()">🔄 Reset</button>
+        </div>
+    </div>
+
+    <div class="workspace" id="workspace">
+        <div class="legend">
+            <h4>Stress-Level</h4>
+            <div class="legend-item">
+                <div class="legend-circle stress-1"></div>
+                <span>1 - Sehr entspannt</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle stress-2"></div>
+                <span>2 - Entspannt</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle stress-3"></div>
+                <span>3 - Angespannt</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle stress-4"></div>
+                <span>4 - Sehr angespannt</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle stress-5"></div>
+                <span>5 - Überlastet</span>
+            </div>
+            <div style="margin-top: 15px; font-size: 11px; color: #ccc;">
+                💡 Doppelklick = Stress ändern<br>
+                🖱️ Halten & Ziehen = Position ändern<br>
+                🔗 Linie klicken = Beziehung bearbeiten
+            </div>
+        </div>
+
+        <div class="stats">
+            <h4 style="color: #81C784; margin-bottom: 10px;">Reflexions-Impulse</h4>
+            <div>
+                <div>Durchschnittlicher Stress: <span id="avgStress">Mittel</span></div>
+                <div>Belastete Bereiche: <span id="overloaded">1</span></div>
+                <div style="margin-top: 10px; color: #ccc;">
+                    💭 Betrachte deine Position<br>
+                    🎯 Erkenne Muster<br>
+                    🌱 Reflektiere deinen Beitrag
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // Global state
+    let members = [
+        { id: 1, name: 'Anna\n(Projektleitung)', x: 200, y: 150, stress: 4 },
+        { id: 2, name: 'Marcus\n(Entwicklung)', x: 400, y: 250, stress: 3 },
+        { id: 3, name: 'Sarah\n(Design)', x: 300, y: 400, stress: 1 },
+        { id: 4, name: 'Tom\n(QA)', x: 600, y: 200, stress: 2 }
+    ];
+    
+    let connections = [];
+    let nextId = 5;
+    let isDragging = false;
+    let dragElement = null;
+    let dragOffset = { x: 0, y: 0 };
+    let stateHistory = [];
+    let currentStateIndex = -1;
+
+    // Double click / Hold helpers
+    let clickCount = 0;
+    let clickTimer = null;
+    let holdTimer = null;
+    let isHolding = false;
+    let startPos = { x: 0, y: 0 };
+
+    const reflections = [
+        "🪞 Welche Rolle übernimmst du normalerweise in stressigen Teamsituationen?",
+        "💭 Was ist dein automatisches Verhalten, wenn im Team Spannungen entstehen?",
+        "🌱 Wofür ist deine Position im Team nützlich - auch wenn sie manchmal anstrengend ist?",
+        "👁️ Welche Muster bei dir wiederholen sich in verschiedenen Teams?",
+        "💪 Wann warst du zuletzt überrascht von deiner eigenen Wirkung im Team?",
+        "🛡️ Was brauchst du, um deine Grenzen im Team kommunizieren zu können?",
+        "🤝 Bei welchen Teammitgliedern entstehen die lebendigsten Gespräche - warum?",
+        "🔄 Wenn du eine Woche lang eine andere Rolle im Team hättest - welche wäre das?"
+    ];
+
+    const wonderQuestions = [
+        "✨ Stell dir vor, morgen wachst du auf und fühlst dich im Team völlig authentisch und entspannt. Was wäre das erste Zeichen dafür?",
+        "🌟 Wenn alle Teamspannungen über Nacht verschwinden würden - welche deiner Stärken würden plötzlich noch sichtbarer?",
+        "💫 Du wachst morgen auf und hast die ideale Teamrolle. Wie würde dein Arbeitsalltag konkret aussehen?",
+        "⭐ Angenommen, das Team würde perfekt funktionieren - welche deiner jetzigen 'Aufgaben' könntest du endlich abgeben?",
+        "🎭 Wenn du für einen Tag die 'beste Version deiner selbst' im Team wärst - was würden die anderen als erstes bemerken?"
+    ];
+
+    const scalingQuestions = [
+        { text: 'Wie authentisch kannst du aktuell im Team sein?', desc: '1 = Verstelle mich stark, 10 = Völlig authentisch' },
+        { text: 'Wie sehr vertraust du darauf, dass das Team dich trägt?', desc: '1 = Kein Vertrauen, 10 = Volles Vertrauen' },
+        { text: 'Wie wohl fühlst du dich mit deiner aktuellen Teamrolle?', desc: '1 = Sehr unwohl, 10 = Völlig wohl' },
+        { text: 'Wie stark fühlst du dich emotional mit dem Team verbunden?', desc: '1 = Gar nicht verbunden, 10 = Sehr verbunden' },
+        { text: 'Wie gut gelingt es dir, deine Bedürfnisse im Team zu kommunizieren?', desc: '1 = Gar nicht, 10 = Sehr gut' }
+    ];
+
+    // Initialization
+    function init() {
+        initConnections();
+        createMembers();
+        updateConnections();
+        updateStats();
+        saveState();
+
+        setTimeout(() => {
+            showPopup('Willkommen beim Reflexions-Radar! 🎯', 
+                '<strong>Bedienung:</strong><br>' +
+                '• <strong>Doppelklick auf Kreise:</strong> Stress-Level ändern<br>' +
+                '• <strong>Kreis gedrückt halten:</strong> Position verschieben<br>' +
+                '• <strong>Linien anklicken:</strong> Beziehungen charakterisieren<br>' +
+                '• <strong>Reflexionsfragen nutzen:</strong> Für tiefere Einsichten<br>' +
+                '• <strong>Arbeitsblatt erstellen:</strong> Mit Notizfeldern für systemische Beratung<br><br>' +
+                '<em>Deine Perspektive ist subjektiv und wertvoll - es gibt kein "richtig" oder "falsch"!</em>');
+        }, 1500);
+    }
+
+    function saveState() {
+        const state = {
+            members: JSON.parse(JSON.stringify(members)),
+            connections: JSON.parse(JSON.stringify(connections)),
+            timestamp: Date.now()
+        };
+        
+        stateHistory = stateHistory.slice(0, currentStateIndex + 1);
+        stateHistory.push(state);
+        currentStateIndex = stateHistory.length - 1;
+
+        // Limit history to max 20
+        if (stateHistory.length > 20) {
+            stateHistory.shift();
+            currentStateIndex--;
+        }
+
+        updateNavigationButtons();
+    }
+
+    function goBack() {
+        if (currentStateIndex > 0) {
+            currentStateIndex--;
+            restoreState(stateHistory[currentStateIndex]);
+        }
+    }
+
+    function goForward() {
+        if (currentStateIndex < stateHistory.length - 1) {
+            currentStateIndex++;
+            restoreState(stateHistory[currentStateIndex]);
+        }
+    }
+
+    function restoreState(state) {
+        members = JSON.parse(JSON.stringify(state.members));
+        connections = JSON.parse(JSON.stringify(state.connections));
+        createMembers();
+        updateConnections();
+        updateStats();
+        updateNavigationButtons();
+    }
+
+    function updateNavigationButtons() {
+        const backBtn = document.getElementById('backBtn');
+        const forwardBtn = document.getElementById('forwardBtn');
+        backBtn.disabled = currentStateIndex <= 0;
+        backBtn.style.opacity = backBtn.disabled ? '0.5' : '1';
+        forwardBtn.disabled = currentStateIndex >= stateHistory.length - 1;
+        forwardBtn.style.opacity = forwardBtn.disabled ? '0.5' : '1';
+    }
+
+    function initConnections() {
+        connections = [];
+        for (let i = 0; i < members.length; i++) {
+            for (let j = i + 1; j < members.length; j++) {
+                connections.push({
+                    id: members[i].id + '-' + members[j].id,
+                    member1: members[i].id,
+                    member2: members[j].id,
+                    emoji: '🤝'
+                });
+            }
+        }
+    }
+
+    function createMembers() {
+        const workspace = document.getElementById('workspace');
+        document.querySelectorAll('.team-member').forEach(el => el.remove());
+
+        members.forEach(member => {
+            const div = document.createElement('div');
+            div.className = 'team-member stress-' + member.stress;
+            div.style.left = member.x + 'px';
+            div.style.top = member.y + 'px';
+            div.style.position = 'absolute';
+            div.textContent = member.name;
+            div.dataset.id = member.id;
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = '×';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                deleteMember(member.id);
+            };
+            div.appendChild(deleteBtn);
+
+            div.addEventListener('mousedown', handleInteractionStart);
+            div.addEventListener('touchstart', handleInteractionStart, { passive: false });
+
+            workspace.appendChild(div);
+        });
+    }
+
+    function handleInteractionStart(e) {
+        e.preventDefault();
+
+        const element = e.target.closest('.team-member');
+        if (!element) return;
+
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+        startPos = { x: clientX, y: clientY };
+        isHolding = false;
+
+        clickCount++;
+        if (clickCount === 1) {
+            clickTimer = setTimeout(() => {
+                clickCount = 0;
+                startHoldTimer(element, e);
+            }, 300);
+        } else if (clickCount === 2) {
+            clearTimeout(clickTimer);
+            clearTimeout(holdTimer);
+            clickCount = 0;
+            changeStress(e);
+            return;
+        }
+
+        document.addEventListener('mousemove', checkMovement);
+        document.addEventListener('touchmove', checkMovement, { passive: false });
+        document.addEventListener('mouseup', handleInteractionEnd);
+        document.addEventListener('touchend', handleInteractionEnd);
+    }
+
+    function startHoldTimer(element, originalEvent) {
+        holdTimer = setTimeout(() => {
+            isHolding = true;
+            element.classList.add('dragging');
+
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+
+            startDrag(originalEvent);
+        }, 600);
+    }
+
+    function checkMovement(e) {
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+        const distance = Math.sqrt(
+            Math.pow(clientX - startPos.x, 2) + 
+            Math.pow(clientY - startPos.y, 2)
+        );
+
+        if (distance > 15) {
+            clearTimeout(holdTimer);
+            clearTimeout(clickTimer);
+            clickCount = 0;
+        }
+    }
+
+    function handleInteractionEnd(e) {
+        clearTimeout(holdTimer);
+
+        document.removeEventListener('mousemove', checkMovement);
+        document.removeEventListener('touchmove', checkMovement);
+        document.removeEventListener('mouseup', handleInteractionEnd);
+        document.removeEventListener('touchend', handleInteractionEnd);
+
+        document.querySelectorAll('.team-member').forEach(el => {
+            el.classList.remove('dragging');
+        });
+
+        if (isDragging) {
+            stopDrag();
+        }
+    }
+
+    function startDrag(e) {
+        isDragging = true;
+        dragElement = e.target.closest('.team-member');
+
+        const rect = dragElement.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+        dragOffset.x = clientX - rect.left;
+        dragOffset.y = clientY - rect.top;
+
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('touchmove', drag, { passive: false });
+        document.addEventListener('touchend', stopDrag);
+    }
+
+    function drag(e) {
+        if (!isDragging || !dragElement) return;
+
+        const workspace = document.getElementById('workspace');
+        const workspaceRect = workspace.getBoundingClientRect();
+
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+        let newX = clientX - workspaceRect.left - dragOffset.x;
+        let newY = clientY - workspaceRect.top - dragOffset.y;
+
+        newX = Math.max(0, Math.min(newX, workspaceRect.width - 100));
+        newY = Math.max(0, Math.min(newY, workspaceRect.height - 100));
+
+        dragElement.style.left = newX + 'px';
+        dragElement.style.top = newY + 'px';
+
+        // Update member coordinates in state
+        const memberId = parseInt(dragElement.dataset.id);
+        const member = members.find(m => m.id === memberId);
+        if (member) {
+            member.x = newX;
+            member.y = newY;
+            updateConnections();
+            updateStats();
+        }
+
+        e.preventDefault();
+    }
+
+    function stopDrag() {
+        if (!isDragging) return;
+
+        isDragging = false;
+        dragElement = null;
+
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', stopDrag);
+        document.removeEventListener('touchmove', drag);
+        document.removeEventListener('touchend', stopDrag);
+
+        saveState();
+    }
+
+    function changeStress(e) {
+        const element = e.target.closest('.team-member');
+        if (!element) return;
+
+        const memberId = parseInt(element.dataset.id);
+        const member = members.find(m => m.id === memberId);
+        if (!member) return;
+
+        member.stress = member.stress >= 5 ? 1 : member.stress + 1;
+        createMembers();
+        updateConnections();
+        updateStats();
+        saveState();
+    }
+
+    function updateConnections() {
+        document.querySelectorAll('.connection-line').forEach(line => line.remove());
+        document.querySelectorAll('.connection-emoji').forEach(emoji => emoji.remove());
+
+        const workspace = document.getElementById('workspace');
+
+        connections.forEach(conn => {
+            const member1 = members.find(m => m.id === conn.member1);
+            const member2 = members.find(m => m.id === conn.member2);
+            if (!member1 || !member2) return;
+
+            const x1 = member1.x + 50;
+            const y1 = member1.y + 50;
+            const x2 = member2.x + 50;
+            const y2 = member2.y + 50;
+
+            const length = Math.hypot(x2 - x1, y2 - y1);
+            const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+            const line = document.createElement('div');
+            line.className = 'connection-line';
+            line.style.width = length + 'px';
+            line.style.left = x1 + 'px';
+            line.style.top = y1 + 'px';
+            line.style.transform = `rotate(${angle}deg)`;
+            line.dataset.id = conn.id;
+
+            line.addEventListener('click', () => {
+                editConnection(conn.id);
+            });
+
+            workspace.appendChild(line);
+
+            const emojiEl = document.createElement('div');
+            emojiEl.className = 'connection-emoji';
+            emojiEl.textContent = conn.emoji;
+
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            emojiEl.style.left = midX + 'px';
+            emojiEl.style.top = midY + 'px';
+
+            emojiEl.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                editConnection(conn.id);
+            });
+
+            workspace.appendChild(emojiEl);
+        });
+    }
+
+    function editConnection(connId) {
+        const conn = connections.find(c => c.id === connId);
+        if (!conn) return;
+
+        const emoji = prompt('Beziehungs-Emoji eingeben (z.B. 🤝, ❤️, ⚡)', conn.emoji);
+        if (emoji === null) return;
+        conn.emoji = emoji || '🤝';
+
+        updateConnections();
+        saveState();
+    }
+
+    function addPerson() {
+        const name = prompt('Name und Rolle eingeben (z.B. "Lena (Marketing)")');
+        if (!name) return;
+
+        members.push({
+            id: nextId++,
+            name: name,
+            x: 100 + Math.random() * 400,
+            y: 100 + Math.random() * 300,
+            stress: 3
+        });
+
+        initConnections();
+        createMembers();
+        updateConnections();
+        updateStats();
+        saveState();
+    }
+
+    function deleteMember(id) {
+        members = members.filter(m => m.id !== id);
+        connections = connections.filter(c => c.member1 !== id && c.member2 !== id);
+
+        createMembers();
+        updateConnections();
+        updateStats();
+        saveState();
+    }
+
+    function updateStats() {
+        const avgStressEl = document.getElementById('avgStress');
+        const overloadedEl = document.getElementById('overloaded');
+
+        if (members.length === 0) {
+            avgStressEl.textContent = 'Keine Daten';
+            overloadedEl.textContent = '0';
+            return;
+        }
+
+        const avgStress = members.reduce((acc, m) => acc + m.stress, 0) / members.length;
+        avgStressEl.textContent = avgStress.toFixed(2);
+
+        const overloadCount = members.filter(m => m.stress >= 4).length;
+        overloadedEl.textContent = overloadCount;
+    }
+
+    function showPopup(title, htmlContent) {
+        if (document.querySelector('.popup')) return;
+
+        const popup = document.createElement('div');
+        popup.className = 'popup';
+
+        const h3 = document.createElement('h3');
+        h3.textContent = title;
+        popup.appendChild(h3);
+
+        const p = document.createElement('div');
+        p.innerHTML = htmlContent;
+        popup.appendChild(p);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'close-btn';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.onclick = () => popup.remove();
+        popup.appendChild(closeBtn);
+
+        document.body.appendChild(popup);
+    }
+
+    let currentReflectionIndex = 0;
+    function showReflection() {
+        if (currentReflectionIndex >= reflections.length) currentReflectionIndex = 0;
+        showPopup('Reflexion', reflections[currentReflectionIndex]);
+        currentReflectionIndex++;
+    }
+
+    let currentWonderIndex = 0;
+    function showWonder() {
+        if (currentWonderIndex >= wonderQuestions.length) currentWonderIndex = 0;
+        showPopup('Wunderfrage', wonderQuestions[currentWonderIndex]);
+        currentWonderIndex++;
+    }
+
+    let currentScalingIndex = 0;
+    function showScaling() {
+        if (currentScalingIndex >= scalingQuestions.length) currentScalingIndex = 0;
+        const q = scalingQuestions[currentScalingIndex];
+
+        const html = `
+            <p><strong>${q.text}</strong></p>
+            <p><em>${q.desc}</em></p>
+            <input id="scalingInput" type="range" min="1" max="10" value="5" />
+            <div id="scaleValue" style="text-align:center; margin-top:10px;">5</div>
+            <button onclick="closePopup()">OK</button>
+        `;
+
+        showPopup('Skalierung', html);
+
+        const slider = document.getElementById('scalingInput');
+        const val = document.getElementById('scaleValue');
+
+        slider.addEventListener('input', () => {
+            val.textContent = slider.value;
+        });
+
+        currentScalingIndex++;
+    }
+
+    function closePopup() {
+        const popup = document.querySelector('.popup');
+        if (popup) popup.remove();
+    }
+
+    function showSessionSummary() {
+        showPopup('Session Zusammenfassung', '<p>Funktion noch in Arbeit...</p>');
+    }
+
+    function exportSystemicWorksheet() {
+        const data = {
+            members: members,
+            connections: connections,
+            timestamp: Date.now()
+        };
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'reflexions_radar_arbeitsblatt.json';
+        a.click();
+
+        URL.revokeObjectURL(url);
+    }
+
+    function resetAll() {
+        if (confirm('Alle Daten zurücksetzen?')) {
+            members = [];
+            connections = [];
+            createMembers();
+            updateConnections();
+            updateStats();
+            saveState();
+        }
+    }
+
+    window.onload = () => {
+        init();
+    };
+</script>
+</body>
+</html>
