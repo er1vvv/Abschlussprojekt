@@ -1,0 +1,3608 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reflexions-Radar - Systemische Teamreflexion</title>
+    <style>
+        :root {
+            --primary-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-bg: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.8);
+            --accent-green: #4CAF50;
+            --accent-blue: #2196F3;
+            --accent-orange: #FF9800;
+            --accent-red: #f44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .controls-primary {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .timeline-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--glass-bg);
+            padding: 8px 15px;
+            border-radius: 25px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: var(--accent-green);
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(26px);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .workspace {
+            height: calc(100vh - 80px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .radar {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        .member {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: move;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .member:hover {
+            transform: scale(1.1);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .member.self {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 20px rgba(129, 199, 132, 0.4);
+        }
+
+        .connection {
+            position: absolute;
+            height: 4px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), rgba(129, 199, 132, 0.5));
+            border-radius: 2px;
+            transform-origin: left center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .connection:hover {
+            height: 6px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.6), rgba(129, 199, 132, 0.8));
+        }
+
+        .connection-emoji {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 12px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+
+        .connection:hover .connection-emoji {
+            background: rgba(0, 0, 0, 0.9);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .connection-context-menu {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 8px 0;
+            min-width: 200px;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.9);
+            transition: all 0.2s ease;
+        }
+
+        .connection-context-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+        }
+
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            background: none;
+            color: white;
+            width: 100%;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .context-menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .context-menu-item span {
+            font-size: 16px;
+        }
+
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            opacity: 0;
+            animation: popupIn 0.3s ease forwards;
+        }
+
+        @keyframes popupIn {
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .timeline-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 25px;
+            padding: 15px 25px;
+            display: none;
+            align-items: center;
+            gap: 15px;
+            z-index: 100;
+            min-width: 600px;
+            max-width: 90vw;
+        }
+
+        .timeline-controls.active {
+            display: flex;
+        }
+
+        .timeline-slider {
+            flex: 1;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            position: relative;
+            cursor: pointer;
+            margin: 0 15px;
+            min-width: 200px;
+        }
+
+        .timeline-progress {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-green), #81C784);
+            border-radius: 6px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .timeline-thumb {
+            position: absolute;
+            top: 50%;
+            left: 0%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: #ffffff;
+            border: 3px solid var(--accent-green);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .timeline-thumb:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .timeline-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 1001;
+            margin-bottom: 8px;
+        }
+
+        .timeline-tooltip.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .timeline-info {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .speed-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.8);
+            padding: 4px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .speed-btn.active,
+        .speed-btn:hover {
+            background: var(--accent-green);
+            color: white;
+            border-color: var(--accent-green);
+        }
+
+        .timeline-btn {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.4);
+            color: #f44336;
+            padding: 6px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .info-btn {
+            background: rgba(33, 150, 243, 0.2);
+            border: 1px solid rgba(33, 150, 243, 0.4);
+            color: #2196F3;
+            padding: 2px 6px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+        .info-btn:hover {
+            background: rgba(33, 150, 243, 0.3);
+            transform: scale(1.1);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent-green);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Slider Styles - Fix für schwarz auf schwarz */
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            margin: 15px 0;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4CAF50, #81C784);
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4CAF50, #81C784);
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        input[type="range"]::-ms-thumb {
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4CAF50, #81C784);
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        input[type="range"]::-webkit-slider-track {
+            background: rgba(255, 255, 255, 0.2);
+            height: 8px;
+            border-radius: 5px;
+        }
+
+        input[type="range"]::-moz-range-track {
+            background: rgba(255, 255, 255, 0.2);
+            height: 8px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        input[type="range"]::-ms-track {
+            background: rgba(255, 255, 255, 0.2);
+            height: 8px;
+            border-radius: 5px;
+            border: none;
+            color: transparent;
+        }
+
+        /* Textarea Styles */
+        textarea.input-field {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+            line-height: 1.4;
+        }
+
+        /* Select Styles */
+        select.input-field {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23ffffff' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 12px;
+            padding-right: 40px;
+        }
+
+        select.input-field option {
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px;
+        }
+
+        /* Button Improvements */
+        .btn:active {
+            transform: translateY(0px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .settings-btn {
+            background: rgba(255, 193, 7, 0.2);
+            border-color: rgba(255, 193, 7, 0.4);
+            color: #FFC107;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 193, 7, 0.3);
+            transform: translateY(-1px) rotate(45deg);
+        }
+
+        /* Session Menu Overlay */
+        .session-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .session-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Session Menu */
+        .session-menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .session-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .session-menu h3 {
+            color: #ffffff;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 22px;
+        }
+
+        .session-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Session Menu Advanced Styles */
+        .session-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .session-section:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .session-section h4 {
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .session-item {
+            margin: 10px 0;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.2s ease;
+        }
+
+        .session-item:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.2);
+            transform: translateY(-1px);
+        }
+
+        .session-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .session-item-title {
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .session-item-date {
+            color: #ccc;
+            font-size: 12px;
+        }
+
+        .session-item-stats {
+            color: rgba(255,255,255,0.8);
+            font-size: 12px;
+            margin: 5px 0;
+        }
+
+        .session-item-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .session-btn-small {
+            font-size: 11px;
+            padding: 4px 8px;
+            margin: 0;
+            min-width: 60px;
+        }
+
+        .session-btn-load {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+
+        .session-btn-delete {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.5);
+        }
+
+        .session-btn-export {
+            background: rgba(33, 150, 243, 0.3);
+            border-color: rgba(33, 150, 243, 0.5);
+        }
+
+        /* Auto-save indicator */
+        .auto-save-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .auto-save-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Session search */
+        .session-search {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .session-search input {
+            width: 100%;
+            padding: 10px 15px;
+            padding-left: 35px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .session-search::before {
+            content: '🔍';
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            z-index: 1;
+        }
+
+        /* Popup Content Styling */
+        .popup h3 {
+            color: #ffffff;
+            margin-bottom: 20px;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        .popup p {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .popup div {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Scaling Value Display */
+        #scalingValue {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            border-radius: 8px;
+            padding: 8px;
+            color: #ffffff;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        /* Slider Labels */
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+        }
+
+        /* Connection Context Menu Mobile Optimization */
+        @media (max-width: 768px) {
+            .connection-context-menu {
+                min-width: 200px;
+                max-width: 90vw;
+            }
+
+            .context-menu-item {
+                padding: 15px 20px;
+                font-size: 16px;
+            }
+
+            .context-menu-item span {
+                font-size: 18px;
+            }
+
+            /* Touch-friendly popup buttons */
+            .popup .btn {
+                min-height: 44px;
+                margin: 8px 4px;
+                font-size: 16px;
+            }
+
+            /* Better textarea sizing on mobile */
+            textarea.input-field {
+                min-height: 120px;
+                font-size: 16px;
+            }
+
+            input.input-field {
+                font-size: 16px;
+                min-height: 44px;
+            }
+
+        /* Stats Panel */
+        .stats-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 280px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 20px;
+            z-index: 50;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .stats-panel h3 {
+            color: #ffffff;
+            margin-bottom: 15px;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stats-item:last-child {
+            border-bottom: none;
+        }
+
+        .stats-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+
+        .stats-value {
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        /* Stress Legend */
+        .stress-legend {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 15px;
+            z-index: 50;
+            min-width: 200px;
+        }
+
+        .stress-legend h4 {
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            gap: 10px;
+        }
+
+        .legend-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .legend-circle.stress-1 { background: linear-gradient(135deg, #4CAF50, #81C784); }
+        .legend-circle.stress-2 { background: linear-gradient(135deg, #8BC34A, #AED581); }
+        .legend-circle.stress-3 { background: linear-gradient(135deg, #FFEB3B, #FFF176); }
+        .legend-circle.stress-4 { background: linear-gradient(135deg, #FF9800, #FFB74D); }
+        .legend-circle.stress-5 { background: linear-gradient(135deg, #f44336, #EF5350); }
+
+        .legend-text {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+        }
+
+        /* More Menu for Mobile */
+        .more-menu-btn {
+            display: none;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            position: relative;
+        }
+
+        .more-menu-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 5px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 10px 0;
+            min-width: 200px;
+            backdrop-filter: blur(20px);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+            z-index: 1000;
+        }
+
+        .more-menu-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .more-menu-item {
+            display: block;
+            width: 100%;
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: white;
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            font-size: 14px;
+        }
+
+        .more-menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Team Health Indicator */
+        .team-health {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .health-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .health-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .health-excellent { background: linear-gradient(90deg, #4CAF50, #81C784); }
+        .health-good { background: linear-gradient(90deg, #8BC34A, #AED581); }
+        .health-moderate { background: linear-gradient(90deg, #FFEB3B, #FFF176); }
+        .health-concerning { background: linear-gradient(90deg, #FF9800, #FFB74D); }
+        .health-critical { background: linear-gradient(90deg, #f44336, #EF5350); }
+
+        /* Mobile Adaptations */
+        @media (max-width: 768px) {
+            .controls-primary .btn:nth-child(n+6) {
+                display: none;
+            }
+            
+            .more-menu-btn {
+                display: block;
+            }
+            
+            .stats-panel {
+                position: relative;
+                top: auto;
+                right: auto;
+                width: 100%;
+                margin: 20px;
+                width: calc(100% - 40px);
+            }
+            
+            .stress-legend {
+                position: relative;
+                bottom: auto;
+                right: auto;
+                margin: 20px;
+                width: calc(100% - 40px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .controls-primary .btn:nth-child(n+4) {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .member {
+                width: 60px;
+                height: 60px;
+                font-size: 9px;
+            }
+
+            .controls-primary .btn {
+                font-size: 10px;
+                padding: 6px 3px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎯 Reflexions-Radar</div>
+        
+        <div class="timeline-toggle">
+            <span>Timeline</span>
+            <div class="toggle-switch" id="timelineToggle" onclick="TimelineManager.toggle()">
+                <div class="toggle-slider"></div>
+            </div>
+        </div>
+        
+        <div class="controls-primary">
+            <button class="btn" id="reflectionBtn">💭 Reflexion</button>
+            <button class="btn" id="scalingBtn">📊 Skalierung</button>
+            <button class="btn" id="wonderBtn">✨ Wunder</button>
+            <button class="btn" id="addPersonBtn">👥 Person</button>
+            <button class="btn" id="backBtn">↩️ Zurück</button>
+            <button class="btn" id="forwardBtn">↪️ Vor</button>
+            <button class="btn" id="sessionBtn">📄 Session</button>
+            <button class="btn" id="worksheetBtn">📋 Arbeitsblatt</button>
+            <button class="btn" id="resetBtn">🔄 Reset</button>
+            <button class="btn settings-btn" id="settingsBtn" title="Session-Verwaltung">⚙️</button>
+            <button class="more-menu-btn" id="moreMenuBtn" onclick="toggleMoreMenu()">
+                ••• Mehr
+                <div class="more-menu-dropdown" id="moreMenuDropdown">
+                    <button class="more-menu-item" onclick="goBack(); closeMoreMenu();">↩️ Zurück</button>
+                    <button class="more-menu-item" onclick="goForward(); closeMoreMenu();">↪️ Vor</button>
+                    <button class="more-menu-item" onclick="showSessionSummary(); closeMoreMenu();">📄 Session</button>
+                    <button class="more-menu-item" onclick="resetAll(); closeMoreMenu();">🔄 Reset</button>
+                    <button class="more-menu-item" onclick="showSessionMenu(); closeMoreMenu();">⚙️ Einstellungen</button>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <div class="workspace" id="workspace">
+        <div class="radar" id="radar"></div>
+    </div>
+
+    <!-- Stats Panel -->
+    <div class="stats-panel" id="statsPanel">
+        <h3>📊 Team-Dynamik</h3>
+        <div class="stats-item">
+            <span class="stats-label">👥 Teammitglieder</span>
+            <span class="stats-value" id="memberCount">4</span>
+        </div>
+        <div class="stats-item">
+            <span class="stats-label">🔗 Verbindungen</span>
+            <span class="stats-value" id="connectionCount">0</span>
+        </div>
+        <div class="stats-item">
+            <span class="stats-label">💭 Reflexionen</span>
+            <span class="stats-value" id="responseCount">0</span>
+        </div>
+        <div class="stats-item">
+            <span class="stats-label">⏰ Session-Zeit</span>
+            <span class="stats-value" id="sessionTime">00:00</span>
+        </div>
+        
+        <div class="team-health">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                <span style="color: rgba(255,255,255,0.8); font-size: 12px;">Stress-Thermometer</span>
+                <button class="info-btn" onclick="showStressThermometerInfo()" title="Was ist das Stress-Thermometer?">ℹ️</button>
+            </div>
+            <div class="health-bar">
+                <div class="health-fill" id="healthFill" style="width: 75%;"></div>
+            </div>
+            <div style="color: white; font-size: 14px; font-weight: bold;" id="healthLabel">Entspannt</div>
+        </div>
+    </div>
+
+    <!-- Stress Legend -->
+    <div class="stress-legend" id="stressLegend">
+        <h4>Stress-Level Legende</h4>
+        <div class="legend-item">
+            <div class="legend-circle stress-1"></div>
+            <span class="legend-text">1 - Sehr entspannt</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-circle stress-2"></div>
+            <span class="legend-text">2 - Entspannt</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-circle stress-3"></div>
+            <span class="legend-text">3 - Normal</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-circle stress-4"></div>
+            <span class="legend-text">4 - Gestresst</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-circle stress-5"></div>
+            <span class="legend-text">5 - Sehr gestresst</span>
+        </div>
+    </div>
+
+    <div class="timeline-controls" id="timelineControls">
+        <button class="btn" onclick="previousTimelinePoint()">⏮️</button>
+        <button class="btn" id="playBtn" onclick="toggleTimelinePlayback()">▶️</button>
+        <button class="btn" onclick="nextTimelinePoint()">⏭️</button>
+        <div class="timeline-info" id="timelineInfo">Punkt 1 von 1</div>
+        
+        <div class="timeline-slider" id="timelineSlider" onclick="jumpToTimelinePosition(event)">
+            <div class="timeline-progress" id="timelineProgress"></div>
+            <div class="timeline-thumb" id="timelineThumb"></div>
+            <div class="timeline-tooltip" id="timelineTooltip">Ausgangssituation</div>
+        </div>
+        
+        <div class="speed-control">
+            <span>Speed:</span>
+            <button class="speed-btn" onclick="changeTimelineSpeed(0.5)">0.5x</button>
+            <button class="speed-btn active" onclick="changeTimelineSpeed(1)">1x</button>
+            <button class="speed-btn" onclick="changeTimelineSpeed(2)">2x</button>
+        </div>
+        
+        <button class="timeline-btn" onclick="stopTimelinePlayback()">
+            ⏹️ Stop
+        </button>
+    </div>
+
+    <!-- Session Management Menu -->
+    <div class="session-overlay" id="sessionOverlay" onclick="closeSessionMenu()"></div>
+    <div class="session-menu" id="sessionMenu">
+        <button class="close-btn" onclick="closeSessionMenu()">×</button>
+        <h3>⚙️ Session-Verwaltung</h3>
+        
+        <div class="session-section">
+            <h4>💾 Aktuelle Session speichern</h4>
+            <input type="text" class="input-field" id="saveSessionName" placeholder="Session-Name eingeben..." maxlength="30">
+            <button class="btn" onclick="saveCurrentSession()" style="width: 100%; margin-top: 10px;">Speichern</button>
+        </div>
+        
+        <div class="session-section">
+            <h4>📤 Session exportieren</h4>
+            <button class="btn" onclick="exportSession()" style="width: 100%; background: rgba(76, 175, 80, 0.3);">📄 Als Datei herunterladen</button>
+        </div>
+        
+        <div class="session-section">
+            <h4>📥 Session importieren</h4>
+            <input type="file" id="importSessionFile" accept=".json" style="display: none;" onchange="importSession(event)">
+            <button class="btn" onclick="document.getElementById('importSessionFile').click()" style="width: 100%; background: rgba(33, 150, 243, 0.3);">📁 Datei auswählen</button>
+        </div>
+        
+        <div class="session-section">
+            <h4>📁 Gespeicherte Sessions</h4>
+            <div class="session-search">
+                <input type="text" id="sessionSearchInput" placeholder="Sessions durchsuchen..." oninput="searchSessions()">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="color: #ccc; font-size: 12px;" id="sessionCount">0 Sessions</span>
+                <button class="btn session-btn-small" onclick="clearAllSessions()" style="background: rgba(244, 67, 54, 0.2);">🗑️ Alle löschen</button>
+            </div>
+            <div id="savedSessionsList">
+                <p style="color: #ccc; font-style: italic; text-align: center; padding: 20px;">
+                    Noch keine Sessions gespeichert
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-save indicator -->
+    <div class="auto-save-indicator" id="autoSaveIndicator">
+        💾 Automatisch gespeichert
+    </div>
+
+    <div class="connection-context-menu" id="connectionContextMenu">
+        <button class="context-menu-item" onclick="editConnectionEmoji()">
+            <span>😊</span> Emoji ändern
+        </button>
+        <button class="context-menu-item" onclick="showAddConnectionDialog()">
+            <span>➕</span> Neue Verbindung
+        </button>
+        <button class="context-menu-item" onclick="removeConnection()">
+            <span>❌</span> Verbindung löschen
+        </button>
+    </div>
+
+    <script>
+        // Global variables
+        var members = [
+            { id: 1, name: 'Du\n(Selbstreflexion)', x: 200, y: 150, stress: 3, isSelf: true },
+            { id: 2, name: 'Kolleg:in A\n(Support)', x: 400, y: 250, stress: 2 },
+            { id: 3, name: 'Kolleg:in B\n(Fachlich)', x: 300, y: 400, stress: 4 },
+            { id: 4, name: 'Leitung\n(Entscheidungen)', x: 600, y: 200, stress: 3 }
+        ];
+
+        var connections = [];
+        var userResponses = [];
+        var stateHistory = [];
+        var currentStateIndex = -1;
+        var nextId = 5;
+        var draggedMember = null;
+        var timelineMode = false;
+        var timelineData = [];
+        var currentTimelineIndex = 0;
+        var timelinePlay = false;
+        var timelineInterval = null;
+        var timelineSpeed = 1;
+        var currentSessionId = 'session_' + Date.now();
+        var currentConnectionElement = null;
+
+        const reflections = [
+            "🪞 Wenn du dich als Teil dieses Teams betrachtest - welche Rolle nimmst du meistens ein?",
+            "💭 Wobei im Team fühlst du dich am meisten wie 'du selbst'?",
+            "🔄 Welche Verhaltensweisen wiederholst du im Team, obwohl du sie gerne ändern würdest?",
+            "🌱 Was bringst du ins Team ein, was andere vielleicht gar nicht bemerken?",
+            "⚖️ Wo spürst du Spannungen zwischen dem, was von dir erwartet wird, und dem, was du geben möchtest?"
+        ];
+
+        const wonderQuestions = [
+            "✨ Das Wunder ist geschehen: Du wachst morgen auf und fühlst dich im Team völlig authentisch. Was ist das erste Zeichen?",
+            "🌟 Das Team funktioniert optimal - wie würde ein Außenstehender dich dabei beschreiben?",
+            "💫 Du hast die ideale Teamrolle: Was trägst du bei, was andere nicht können?",
+            "⭐ Wenn morgen alle Teammitglieder 10% mehr sie selbst wären - woran würdet ihr es merken?",
+            "🦋 Das Team ist ein Garten - welche Pflanze wärst du und wie würdest du blühen?"
+        ];
+
+        const scalingQuestions = [
+            { text: 'Wie authentisch kannst du aktuell im Team sein?', desc: '1 = Verstelle mich stark, 10 = Völlig authentisch' },
+            { text: 'Wie gut gelingt es dir, deine Grenzen zu kommunizieren?', desc: '1 = Gar nicht, 10 = Sehr klar' },
+            { text: 'Wie lebendig fühlst du dich in der Teamarbeit?', desc: '1 = Sehr müde, 10 = Sehr lebendig' },
+            { text: 'Wie stark vertraust du darauf, dass das Team dich trägt?', desc: '1 = Kein Vertrauen, 10 = Volles Vertrauen' },
+            { text: 'Wie hilfreich ist deine aktuelle Position für das Gesamtsystem?', desc: '1 = Eher hinderlich, 10 = Sehr hilfreich' }
+        ];
+
+        // Error handling wrapper
+        function safeExecute(fn, errorMessage) {
+            try {
+                return fn();
+            } catch (error) {
+                console.error(errorMessage || 'Ein Fehler ist aufgetreten', error);
+                showPopup('Fehler', (errorMessage || 'Ein Fehler ist aufgetreten') + '. Bitte versuche es erneut.');
+                return null;
+            }
+        }
+
+        // Timeline Management
+        var TimelineManager = {
+            enabled: false,
+            
+            init: function() {
+                this.enabled = false;
+                this.updateUI();
+            },
+            
+            toggle: function() {
+                this.enabled = !this.enabled;
+                timelineMode = this.enabled;
+                
+                if (this.enabled) {
+                    this.initializeTimeline();
+                    this.showNotification();
+                } else {
+                    this.disableTimeline();
+                }
+                
+                this.updateUI();
+            },
+            
+            initializeTimeline: function() {
+                timelineData = [{
+                    timestamp: Date.now(),
+                    members: JSON.parse(JSON.stringify(members)),
+                    connections: JSON.parse(JSON.stringify(connections)),
+                    userResponses: JSON.parse(JSON.stringify(userResponses)),
+                    description: 'Ausgangssituation'
+                }];
+                currentTimelineIndex = 0;
+                this.updateTimelineUI();
+            },
+            
+            disableTimeline: function() {
+                if (timelineInterval) {
+                    clearInterval(timelineInterval);
+                    timelineInterval = null;
+                }
+                timelinePlay = false;
+            },
+            
+            addTimelinePoint: function(description) {
+                if (!this.enabled) return;
+                
+                const newPoint = {
+                    timestamp: Date.now(),
+                    members: JSON.parse(JSON.stringify(members)),
+                    connections: JSON.parse(JSON.stringify(connections)),
+                    userResponses: JSON.parse(JSON.stringify(userResponses)),
+                    description: description || 'Änderung'
+                };
+                
+                timelineData.push(newPoint);
+                currentTimelineIndex = timelineData.length - 1;
+                this.updateTimelineUI();
+            },
+            
+            updateUI: function() {
+                const toggle = document.getElementById('timelineToggle');
+                const controls = document.getElementById('timelineControls');
+                
+                if (this.enabled) {
+                    toggle.classList.add('active');
+                    controls.classList.add('active');
+                } else {
+                    toggle.classList.remove('active');
+                    controls.classList.remove('active');
+                }
+            },
+            
+            updateTimelineUI: function() {
+                const info = document.getElementById('timelineInfo');
+                if (info && timelineData.length > 0) {
+                    info.textContent = `Punkt ${currentTimelineIndex + 1} von ${timelineData.length}`;
+                }
+                updateTimelineSlider();
+            },
+            
+            showNotification: function() {
+                showPopup('Timeline aktiviert! ⏰', 
+                    'Alle Änderungen werden jetzt automatisch gespeichert. ' +
+                    'Nutze die Timeline-Kontrollen am unteren Bildschirmrand, um durch die Entwicklung zu navigieren.'
+                );
+            }
+        };
+
+        function addTimelinePoint(description) {
+            TimelineManager.addTimelinePoint(description);
+        }
+
+        function initConnections() {
+            safeExecute(function() {
+                connections = [
+                    { from: 1, to: 2, emoji: '🤝', strength: 4 },
+                    { from: 1, to: 3, emoji: '💬', strength: 3 },
+                    { from: 2, to: 4, emoji: '⚡', strength: 2 },
+                    { from: 3, to: 4, emoji: '🎯', strength: 5 }
+                ];
+            }, 'Fehler beim Initialisieren der Verbindungen');
+        }
+
+        function createMembers() {
+            safeExecute(function() {
+                const radar = document.getElementById('radar');
+                radar.innerHTML = '';
+                
+                members.forEach(function(member, index) {
+                    const memberEl = document.createElement('div');
+                    memberEl.className = 'member' + (member.isSelf ? ' self' : '');
+                    memberEl.style.left = member.x + 'px';
+                    memberEl.style.top = member.y + 'px';
+                    memberEl.style.background = getStressColor(member.stress);
+                    memberEl.textContent = member.name;
+                    memberEl.dataset.index = index;
+
+                    // Touch events
+                    let touchStartTime;
+                    let touchMoved = false;
+
+                    memberEl.addEventListener('touchstart', function(e) {
+                        touchStartTime = Date.now();
+                        touchMoved = false;
+                        const touch = e.touches[0];
+                        startDrag(e, index, touch.clientX, touch.clientY);
+                    });
+
+                    memberEl.addEventListener('touchmove', function(e) {
+                        touchMoved = true;
+                        const touch = e.touches[0];
+                        drag(e, touch.clientX, touch.clientY);
+                    });
+
+                    memberEl.addEventListener('touchend', function(e) {
+                        const touchDuration = Date.now() - touchStartTime;
+                        endDrag();
+                        
+                        if (!touchMoved && touchDuration < 500) {
+                            changeStress(index);
+                        } else if (!touchMoved && touchDuration >= 500) {
+                            toggleSelfIdentification(index);
+                        }
+                    });
+
+                    // Mouse events
+                    memberEl.addEventListener('mousedown', function(e) {
+                        startDrag(e, index, e.clientX, e.clientY);
+                    });
+
+                    memberEl.addEventListener('click', function(e) {
+                        if (!draggedMember) {
+                            changeStress(index);
+                        }
+                    });
+
+                    memberEl.addEventListener('dblclick', function(e) {
+                        toggleSelfIdentification(index);
+                    });
+
+                    radar.appendChild(memberEl);
+                });
+            }, 'Fehler beim Erstellen der Teammitglieder');
+        }
+
+        function updateConnections() {
+            safeExecute(function() {
+                const radar = document.getElementById('radar');
+                const existingConnections = radar.querySelectorAll('.connection');
+                existingConnections.forEach(conn => conn.remove());
+
+                connections.forEach(function(connection, index) {
+                    const fromMember = members.find(m => m.id === connection.from);
+                    const toMember = members.find(m => m.id === connection.to);
+
+                    if (fromMember && toMember) {
+                        const connectionEl = document.createElement('div');
+                        connectionEl.className = 'connection';
+                        
+                        const fromX = fromMember.x + 40;
+                        const fromY = fromMember.y + 40;
+                        const toX = toMember.x + 40;
+                        const toY = toMember.y + 40;
+                        
+                        const deltaX = toX - fromX;
+                        const deltaY = toY - fromY;
+                        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                        const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+                        
+                        connectionEl.style.left = fromX + 'px';
+                        connectionEl.style.top = fromY + 'px';
+                        connectionEl.style.width = distance + 'px';
+                        connectionEl.style.transform = 'rotate(' + angle + 'deg)';
+                        
+                        const emojiEl = document.createElement('div');
+                        emojiEl.className = 'connection-emoji';
+                        emojiEl.textContent = connection.emoji || '🤝';
+                        connectionEl.appendChild(emojiEl);
+
+                        // Context menu for connections
+                        let longPressTimer;
+
+                        connectionEl.addEventListener('contextmenu', function(e) {
+                            e.preventDefault();
+                            showConnectionContextMenu(e, index);
+                        });
+
+                        connectionEl.addEventListener('touchstart', function(e) {
+                            longPressTimer = setTimeout(() => {
+                                showConnectionContextMenu(e, index);
+                            }, 800);
+                        });
+
+                        connectionEl.addEventListener('touchend', function(e) {
+                            clearTimeout(longPressTimer);
+                        });
+
+                        connectionEl.addEventListener('touchmove', function(e) {
+                            clearTimeout(longPressTimer);
+                        });
+
+                        connectionEl.addEventListener('click', function(e) {
+                            if (!e.detail || e.detail === 1) {
+                                setTimeout(function() {
+                                    if (!e.defaultPrevented) {
+                                        editConnectionEmoji(index);
+                                    }
+                                }, 200);
+                            }
+                        });
+                        
+                        radar.appendChild(connectionEl);
+                    }
+                });
+            }, 'Fehler beim Aktualisieren der Verbindungen');
+        }
+
+        function showConnectionContextMenu(e, connectionIndex) {
+            safeExecute(function() {
+                removeConnectionContextMenu();
+                
+                currentConnectionElement = connectionIndex;
+                
+                const menu = document.getElementById('connectionContextMenu');
+                const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+                
+                menu.style.left = clientX + 'px';
+                menu.style.top = clientY + 'px';
+                menu.classList.add('active');
+                
+                e.preventDefault();
+                e.stopPropagation();
+            }, 'Fehler beim Anzeigen des Verbindungsmenüs');
+        }
+
+        function removeConnectionContextMenu() {
+            safeExecute(function() {
+                const menu = document.getElementById('connectionContextMenu');
+                if (menu) {
+                    menu.classList.remove('active');
+                }
+                currentConnectionElement = null;
+            }, 'Fehler beim Schließen des Verbindungsmenüs');
+        }
+
+        function editConnectionEmoji(connectionIndex = null) {
+            safeExecute(function() {
+                const index = connectionIndex !== null ? connectionIndex : currentConnectionElement;
+                if (index === null || !connections[index]) return;
+                
+                const emojis = ['🤝', '💬', '⚡', '🎯', '❤️', '🔥', '💡', '🌟', '⚖️', '🎭', '🌊', '🎪'];
+                
+                let emojiButtons = '';
+                emojis.forEach(emoji => {
+                    emojiButtons += `<button class="btn" onclick="selectConnectionEmoji('${emoji}', ${index}); removeAllPopups();" style="font-size: 20px; margin: 5px;">${emoji}</button>`;
+                });
+                
+                showPopup('Verbindungs-Emoji auswählen 😊', 
+                    '<p>Wähle ein Emoji, das die Beziehung zwischen diesen Personen beschreibt:</p>' +
+                    '<div style="text-align: center; margin: 15px 0;">' + emojiButtons + '</div>'
+                );
+                
+                removeConnectionContextMenu();
+            }, 'Fehler beim Bearbeiten des Verbindungs-Emojis');
+        }
+
+        function selectConnectionEmoji(emoji, connectionIndex) {
+            safeExecute(function() {
+                if (connections[connectionIndex]) {
+                    connections[connectionIndex].emoji = emoji;
+                    updateConnections();
+                    saveState();
+                    
+                    if (timelineMode) {
+                        addTimelinePoint(`Verbindungs-Emoji geändert zu ${emoji}`);
+                    }
+                }
+            }, 'Fehler beim Auswählen des Emojis');
+        }
+
+        // NEW: Complete Add Connection Dialog Function
+        function showAddConnectionDialog() {
+            safeExecute(function() {
+                let memberOptions = '';
+                members.forEach(member => {
+                    const shortName = member.name.split('\n')[0];
+                    memberOptions += `<option value="${member.id}">${shortName}</option>`;
+                });
+                
+                showPopup('Neue Verbindung hinzufügen ➕', 
+                    '<p>Erstelle eine neue Verbindung zwischen zwei Personen:</p>' +
+                    '<div style="margin: 15px 0;">' +
+                        '<label style="display: block; margin-bottom: 10px;">Von Person:</label>' +
+                        '<select id="fromPerson" class="input-field">' + memberOptions + '</select>' +
+                        '<label style="display: block; margin: 15px 0 10px 0;">Zu Person:</label>' +
+                        '<select id="toPerson" class="input-field">' + memberOptions + '</select>' +
+                    '</div>' +
+                    '<div style="text-align: center;">' +
+                        '<button class="btn" onclick="createNewConnection(); removeAllPopups();">Verbindung erstellen</button>' +
+                        '<button class="btn" onclick="removeAllPopups();">Abbrechen</button>' +
+                    '</div>'
+                );
+                
+                removeConnectionContextMenu();
+            }, 'Fehler beim Anzeigen des Verbindungsdialogs');
+        }
+
+        // NEW: Complete Create New Connection Function
+        function createNewConnection() {
+            safeExecute(function() {
+                const fromId = parseInt(document.getElementById('fromPerson').value);
+                const toId = parseInt(document.getElementById('toPerson').value);
+                
+                if (fromId === toId) {
+                    showPopup('Fehler', 'Eine Person kann nicht mit sich selbst verbunden werden.');
+                    return;
+                }
+                
+                // Check if connection already exists
+                const existingConnection = connections.find(conn => 
+                    (conn.from === fromId && conn.to === toId) || 
+                    (conn.from === toId && conn.to === fromId)
+                );
+                
+                if (existingConnection) {
+                    showPopup('Fehler', 'Diese Verbindung existiert bereits.');
+                    return;
+                }
+                
+                // Create new connection
+                connections.push({
+                    from: fromId,
+                    to: toId,
+                    emoji: '🤝',
+                    strength: 3
+                });
+                
+                updateConnections();
+                saveState();
+                
+                if (timelineMode) {
+                    const fromMember = members.find(m => m.id === fromId);
+                    const toMember = members.find(m => m.id === toId);
+                    addTimelinePoint(`Neue Verbindung: ${fromMember.name.split('\n')[0]} ↔ ${toMember.name.split('\n')[0]}`);
+                }
+                
+                showPopup('Verbindung erstellt! ✅', 'Die neue Verbindung wurde erfolgreich hinzugefügt.');
+            }, 'Fehler beim Erstellen der neuen Verbindung');
+        }
+
+        function removeConnection() {
+            safeExecute(function() {
+                if (currentConnectionElement === null || !connections[currentConnectionElement]) return;
+                
+                const conn = connections[currentConnectionElement];
+                const fromMember = members.find(m => m.id === conn.from);
+                const toMember = members.find(m => m.id === conn.to);
+                
+                showPopup('Verbindung löschen? ❌', 
+                    `<p>Möchtest du die Verbindung zwischen <strong>${fromMember.name.split('\n')[0]}</strong> und <strong>${toMember.name.split('\n')[0]}</strong> wirklich löschen?</p>` +
+                    '<div style="text-align: center; margin-top: 20px;">' +
+                        '<button class="btn" onclick="confirmRemoveConnection(); removeAllPopups();" style="background: rgba(244, 67, 54, 0.3);">Ja, löschen</button>' +
+                        '<button class="btn" onclick="removeAllPopups();">Abbrechen</button>' +
+                    '</div>'
+                );
+                
+                removeConnectionContextMenu();
+            }, 'Fehler beim Löschen der Verbindung');
+        }
+
+        function confirmRemoveConnection() {
+            safeExecute(function() {
+                if (currentConnectionElement === null) return;
+                
+                const removedConnection = connections[currentConnectionElement];
+                connections.splice(currentConnectionElement, 1);
+                
+                updateConnections();
+                saveState();
+                
+                if (timelineMode) {
+                    const fromMember = members.find(m => m.id === removedConnection.from);
+                    const toMember = members.find(m => m.id === removedConnection.to);
+                    addTimelinePoint(`Verbindung gelöscht: ${fromMember.name.split('\n')[0]} ↔ ${toMember.name.split('\n')[0]}`);
+                }
+                
+                currentConnectionElement = null;
+                showPopup('Verbindung gelöscht ✅', 'Die Verbindung wurde erfolgreich entfernt.');
+            }, 'Fehler beim Bestätigen der Löschung');
+        }
+
+        function getStressColor(stress) {
+            const colors = [
+                'linear-gradient(135deg, #4CAF50, #81C784)',
+                'linear-gradient(135deg, #8BC34A, #AED581)', 
+                'linear-gradient(135deg, #FFEB3B, #FFF176)',
+                'linear-gradient(135deg, #FF9800, #FFB74D)',
+                'linear-gradient(135deg, #f44336, #EF5350)'
+            ];
+            return colors[Math.min(stress - 1, 4)];
+        }
+
+        function startDrag(e, memberIndex, clientX, clientY) {
+            draggedMember = {
+                index: memberIndex,
+                offsetX: clientX - members[memberIndex].x,
+                offsetY: clientY - members[memberIndex].y
+            };
+            e.preventDefault();
+        }
+
+        function drag(e, clientX, clientY) {
+            if (draggedMember) {
+                const newX = clientX - draggedMember.offsetX;
+                const newY = clientY - draggedMember.offsetY;
+                
+                members[draggedMember.index].x = Math.max(0, Math.min(window.innerWidth - 80, newX));
+                members[draggedMember.index].y = Math.max(0, Math.min(window.innerHeight - 160, newY));
+                
+                createMembers();
+                updateConnections();
+            }
+        }
+
+        function endDrag() {
+            if (draggedMember) {
+                saveState();
+                if (timelineMode) {
+                    addTimelinePoint(`Position geändert: ${members[draggedMember.index].name.split('\n')[0]}`);
+                }
+                draggedMember = null;
+            }
+        }
+
+        function changeStress(memberIndex) {
+            safeExecute(function() {
+                members[memberIndex].stress = members[memberIndex].stress >= 5 ? 1 : members[memberIndex].stress + 1;
+                createMembers();
+                updateConnections();
+                updateStats(); // Direct call to update stats including thermometer
+                saveState();
+                
+                if (timelineMode) {
+                    addTimelinePoint(`Stress geändert: ${members[memberIndex].name.split('\n')[0]} (${members[memberIndex].stress}/5)`);
+                }
+                
+                // Debug: Log the change
+                console.log('Stress changed for member', memberIndex, 'to', members[memberIndex].stress);
+            }, 'Fehler beim Ändern des Stress-Levels');
+        }
+
+        function toggleSelfIdentification(memberIndex) {
+            safeExecute(function() {
+                members.forEach((member, index) => {
+                    member.isSelf = index === memberIndex;
+                });
+                
+                createMembers();
+                updateConnections();
+                updateStats(); // Update thermometer when self-identification changes
+                saveState();
+                
+                if (timelineMode) {
+                    addTimelinePoint(`Selbst-Identifikation: ${members[memberIndex].name.split('\n')[0]}`);
+                }
+                
+                showPopup('Selbst-Identifikation geändert! 🎯', 
+                    `Du hast dich als "${members[memberIndex].name.split('\n')[0]}" identifiziert. Das Arbeitsblatt wird nun personalisiert.`
+                );
+            }, 'Fehler beim Setzen der Selbst-Identifikation');
+        }
+
+        function saveState() {
+            safeExecute(function() {
+                const state = {
+                    members: JSON.parse(JSON.stringify(members)),
+                    connections: JSON.parse(JSON.stringify(connections)),
+                    userResponses: JSON.parse(JSON.stringify(userResponses)),
+                    timestamp: Date.now()
+                };
+                
+                stateHistory = stateHistory.slice(0, currentStateIndex + 1);
+                stateHistory.push(state);
+                currentStateIndex = stateHistory.length - 1;
+                
+                // Keep only last 50 states
+                if (stateHistory.length > 50) {
+                    stateHistory = stateHistory.slice(-50);
+                    currentStateIndex = 49;
+                }
+                
+                updateNavigationButtons();
+        function confirmImportSession() {
+            safeExecute(function() {
+                if (!window.pendingImportData) return;
+                
+                const sessionData = window.pendingImportData;
+                
+                members = sessionData.members;
+                connections = sessionData.connections;
+                userResponses = sessionData.userResponses || [];
+                stateHistory = sessionData.stateHistory || [];
+                currentStateIndex = stateHistory.length - 1;
+                
+                if (sessionData.timelineData && sessionData.timelineData.length > 0) {
+                    timelineData = sessionData.timelineData;
+                    currentTimelineIndex = timelineData.length - 1;
+                    if (!timelineMode) {
+                        TimelineManager.toggle();
+                    }
+                }
+                
+                currentSessionId = sessionData.sessionId || 'session_' + Date.now();
+                
+                createMembers();
+                updateConnections();
+                updateNavigationButtons();
+                closeSessionMenu();
+                updateStats();
+                
+                // Clean up
+                delete window.pendingImportData;
+                
+                showPopup('Session importiert! 📥', 'Die Session wurde erfolgreich importiert.');
+            }, 'Fehler beim Bestätigen des Imports');
+        }
+
+        function previousTimelinePoint() {
+            safeExecute(function() {
+                if (currentTimelineIndex > 0) {
+                    currentTimelineIndex--;
+                    loadTimelinePoint(currentTimelineIndex);
+                    TimelineManager.updateTimelineUI();
+                }
+            }, 'Fehler beim Laden des vorherigen Timeline-Punkts');
+        }
+
+        function nextTimelinePoint() {
+            safeExecute(function() {
+                if (currentTimelineIndex < timelineData.length - 1) {
+                    currentTimelineIndex++;
+                    loadTimelinePoint(currentTimelineIndex);
+                    TimelineManager.updateTimelineUI();
+                }
+            }, 'Fehler beim Laden des nächsten Timeline-Punkts');
+        }
+
+        function toggleTimelinePlayback() {
+            safeExecute(function() {
+                timelinePlay = !timelinePlay;
+                const playBtn = document.getElementById('playBtn');
+                
+                if (timelinePlay) {
+                    playBtn.textContent = '⏸️';
+                    timelineInterval = setInterval(() => {
+                        if (currentTimelineIndex < timelineData.length - 1) {
+                            nextTimelinePoint();
+                        } else {
+                            toggleTimelinePlayback();
+                        }
+                    }, 2000 / timelineSpeed);
+                } else {
+                    playBtn.textContent = '▶️';
+                    if (timelineInterval) {
+                        clearInterval(timelineInterval);
+                        timelineInterval = null;
+                    }
+                }
+            }, 'Fehler beim Timeline-Playback');
+        }
+
+        // Global cleanup function for all context menus
+        function removeAllContextMenus() {
+            safeExecute(function() {
+                // Remove workspace context menus
+                const workspaceMenus = document.querySelectorAll('#workspaceContextMenu');
+                workspaceMenus.forEach(menu => menu.remove());
+                
+                // Remove connection context menu
+                const connectionMenu = document.getElementById('connectionContextMenu');
+                if (connectionMenu) {
+                    connectionMenu.classList.remove('active');
+                }
+                
+                currentConnectionElement = null;
+            }, 'Fehler beim Entfernen aller Kontextmenüs');
+        }
+
+        // Simplified Workspace Context Menu
+        function showWorkspaceContextMenu(x, y) {
+            safeExecute(function() {
+                // Clean up ALL existing menus first
+                removeAllContextMenus();
+                
+                const menu = document.createElement('div');
+                menu.className = 'connection-context-menu active';
+                menu.id = 'workspaceContextMenu';
+                menu.style.position = 'fixed';
+                menu.style.left = x + 'px';
+                menu.style.top = y + 'px';
+                menu.style.zIndex = '9999';
+                
+                menu.innerHTML = `
+                    <button class="context-menu-item" onclick="showAddConnectionDialog(); removeAllContextMenus(); event.stopPropagation();">
+                        <span>🔗</span> Neue Verbindung hinzufügen
+                    </button>
+                `;
+                
+                document.body.appendChild(menu);
+                
+                // Auto-close after 3 seconds (shorter)
+                setTimeout(() => {
+                    removeAllContextMenus();
+                }, 3000);
+                
+            }, 'Fehler beim Anzeigen des Workspace-Kontextmenüs');
+        }
+
+        function removeWorkspaceContextMenu() {
+            removeAllContextMenus();
+        }
+
+        // Alias für onclick-Kompatibilität
+        window.removeWorkspaceContextMenu = removeWorkspaceContextMenu;
+
+        // Fixed Add Person Function  
+        function addPerson() {
+            safeExecute(function() {
+                showPopup('Neue Person hinzufügen 👥', 
+                    '<div style="margin: 20px 0;">' +
+                        '<label style="display: block; margin-bottom: 10px;">Name der Person:</label>' +
+                        '<input type="text" id="personName" class="input-field" placeholder="z.B. Kolleg:in C" maxlength="30">' +
+                        '<label style="display: block; margin: 15px 0 10px 0;">Rolle/Beschreibung:</label>' +
+                        '<input type="text" id="personRole" class="input-field" placeholder="z.B. (Projektleitung)" maxlength="30">' +
+                    '</div>' +
+                    '<div style="text-align: center;">' +
+                        '<button class="btn" onclick="createPerson(); removeAllPopups();">Person erstellen</button>' +
+                        '<button class="btn" onclick="removeAllPopups();">Abbrechen</button>' +
+                    '</div>'
+                );
+            }, 'Fehler beim Anzeigen des Person-Hinzufügen-Dialogs');
+        }
+
+        function createPerson() {
+            safeExecute(function() {
+                const name = document.getElementById('personName').value.trim();
+                const role = document.getElementById('personRole').value.trim();
+                
+                if (!name) {
+                    showPopup('Fehler', 'Bitte gib einen Namen ein.');
+                    return;
+                }
+                
+                const fullName = name + (role ? '\n(' + role + ')' : '');
+                
+                const newMember = {
+                    id: nextId++,
+                    name: fullName,
+                    x: Math.random() * (window.innerWidth - 200) + 100,
+                    y: Math.random() * (window.innerHeight - 300) + 100,
+                    stress: 3,
+                    isSelf: false
+                };
+                
+                members.push(newMember);
+                createMembers();
+                updateConnections();
+                saveState(); // This calls updateStats() which updates the thermometer
+                
+                if (timelineMode) {
+                    addTimelinePoint(`Person hinzugefügt: ${name}`);
+                }
+                
+                showPopup('Person erstellt! ✅', `${name} wurde dem Team hinzugefügt.`);
+            }, 'Fehler beim Erstellen der neuen Person');
+        }
+
+        // Stress Thermometer Info
+        function showStressThermometerInfo() {
+            safeExecute(function() {
+                showPopup('Stress-Thermometer 🌡️', 
+                    '<div style="line-height: 1.6; text-align: left;">' +
+                    '<p><strong>Was misst das Stress-Thermometer?</strong></p>' +
+                    '<p>Das Thermometer zeigt die <em>systemische Belastung</em> des Teams basierend auf der Stress-Verteilung aller Mitglieder.</p>' +
+                    
+                    '<p><strong>📚 Wissenschaftliche Grundlage:</strong></p>' +
+                    '<p>• <strong>Salvador Minuchin</strong> (1974): "Stress eines Mitglieds = Systemstörung"<br>' +
+                    '• <strong>Virginia Satir</strong> (1972): Team-"Temperatur" und emotionale Balance<br>' +
+                    '• <strong>Hans Selye</strong> (1956): Stress als systemische Anpassungsreaktion</p>' +
+                    
+                    '<p><strong>🎯 Systemische Bedeutung:</strong></p>' +
+                    '<p>• <strong>Hoch:</strong> Team in Entspannung, gute Homöostase<br>' +
+                    '• <strong>Mittel:</strong> Normale Arbeitsbelastung<br>' +
+                    '• <strong>Niedrig:</strong> Systemischer Stress, Interventionsbedarf</p>' +
+                    
+                    '<p><strong>💡 Innovation:</strong> Digitale Visualisierung etablierter systemischer Stress-Konzepte für moderne Teamarbeit.</p>' +
+                    '</div>'
+                );
+            }, 'Fehler beim Anzeigen der Thermometer-Info');
+        }
+
+        // Make it globally available for onclick
+        window.showStressThermometerInfo = showStressThermometerInfo;
+            }, 'Fehler beim Speichern des Zustands');
+        }
+
+        function showReflection() {
+            safeExecute(function() {
+                const randomReflection = reflections[Math.floor(Math.random() * reflections.length)];
+                showPopup('Systemische Reflexionsfrage 💭', 
+                    '<div style="font-size: 16px; margin: 20px 0; line-height: 1.6;">' + randomReflection + '</div>' +
+                    '<div style="margin-top: 20px;">' +
+                        '<textarea id="reflectionResponse" class="input-field" placeholder="Deine Gedanken dazu..." style="height: 100px; resize: vertical;"></textarea>' +
+                    '</div>' +
+                    '<div style="text-align: center; margin-top: 15px;">' +
+                        '<button class="btn" onclick="saveReflectionResponse(); removeAllPopups();">Antwort speichern</button>' +
+                        '<button class="btn" onclick="showReflection();">Neue Frage</button>' +
+                    '</div>'
+                );
+            }, 'Fehler beim Anzeigen der Reflexionsfrage');
+        }
+
+        function saveReflectionResponse() {
+            safeExecute(function() {
+                const response = document.getElementById('reflectionResponse').value;
+                if (response.trim()) {
+                    userResponses.push({
+                        type: 'reflection',
+                        question: document.querySelector('.popup h3').nextElementSibling.textContent,
+                        response: response,
+                        timestamp: Date.now(),
+                        sessionId: currentSessionId
+                    });
+                    
+                    saveState();
+                    
+                    if (timelineMode) {
+                        addTimelinePoint('Reflexionsantwort gespeichert');
+                    }
+                    
+                    showPopup('Antwort gespeichert! ✅', 'Deine Reflexion wurde erfolgreich gespeichert.');
+                }
+            }, 'Fehler beim Speichern der Reflexionsantwort');
+        }
+
+        function showScaling() {
+            safeExecute(function() {
+                const randomScaling = scalingQuestions[Math.floor(Math.random() * scalingQuestions.length)];
+                showPopup('Skalierungsfrage 📊', 
+                    '<div style="font-size: 16px; margin: 20px 0;">' + randomScaling.text + '</div>' +
+                    '<div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 20px;">' + randomScaling.desc + '</div>' +
+                    '<div style="margin: 20px 0;">' +
+                        '<input type="range" id="scalingSlider" min="1" max="10" value="5" style="width: 100%; margin: 10px 0;">' +
+                        '<div style="display: flex; justify-content: space-between; font-size: 12px;">' +
+                            '<span>1</span><span>5</span><span>10</span>' +
+                        '</div>' +
+                        '<div id="scalingValue" style="text-align: center; font-size: 18px; margin: 10px 0;">5</div>' +
+                    '</div>' +
+                    '<div style="margin-top: 20px;">' +
+                        '<textarea id="scalingResponse" class="input-field" placeholder="Was bedeutet dieser Wert für dich?" style="height: 80px;"></textarea>' +
+                    '</div>' +
+                    '<div style="text-align: center; margin-top: 15px;">' +
+                        '<button class="btn" onclick="saveScalingResponse(); removeAllPopups();">Bewertung speichern</button>' +
+                        '<button class="btn" onclick="showScaling();">Neue Frage</button>' +
+                    '</div>'
+                );
+                
+                // Update slider value display
+                document.getElementById('scalingSlider').addEventListener('input', function() {
+                    document.getElementById('scalingValue').textContent = this.value;
+                });
+            }, 'Fehler beim Anzeigen der Skalierungsfrage');
+        }
+
+        function saveScalingResponse() {
+            safeExecute(function() {
+                const value = document.getElementById('scalingSlider').value;
+                const response = document.getElementById('scalingResponse').value;
+                
+                userResponses.push({
+                    type: 'scaling',
+                    question: document.querySelector('.popup h3').nextElementSibling.textContent,
+                    value: parseInt(value),
+                    response: response,
+                    timestamp: Date.now(),
+                    sessionId: currentSessionId
+                });
+                
+                saveState();
+                
+                if (timelineMode) {
+                    addTimelinePoint(`Skalierung: ${value}/10`);
+                }
+                
+                showPopup('Bewertung gespeichert! ✅', `Du hast ${value}/10 Punkte vergeben. Deine Antwort wurde gespeichert.`);
+            }, 'Fehler beim Speichern der Skalierungsantwort');
+        }
+
+        function showWonder() {
+            safeExecute(function() {
+                const randomWonder = wonderQuestions[Math.floor(Math.random() * wonderQuestions.length)];
+                showPopup('Wunderfrage ✨', 
+                    '<div style="font-size: 16px; margin: 20px 0; line-height: 1.6;">' + randomWonder + '</div>' +
+                    '<div style="margin-top: 20px;">' +
+                        '<textarea id="wonderResponse" class="input-field" placeholder="Beschreibe dein Wunder..." style="height: 100px; resize: vertical;"></textarea>' +
+                    '</div>' +
+                    '<div style="text-align: center; margin-top: 15px;">' +
+                        '<button class="btn" onclick="saveWonderResponse(); removeAllPopups();">Vision speichern</button>' +
+                        '<button class="btn" onclick="showWonder();">Neue Wunderfrage</button>' +
+                    '</div>'
+                );
+            }, 'Fehler beim Anzeigen der Wunderfrage');
+        }
+
+        function saveWonderResponse() {
+            safeExecute(function() {
+                const response = document.getElementById('wonderResponse').value;
+                if (response.trim()) {
+                    userResponses.push({
+                        type: 'wonder',
+                        question: document.querySelector('.popup h3').nextElementSibling.textContent,
+                        response: response,
+                        timestamp: Date.now(),
+                        sessionId: currentSessionId
+                    });
+                    
+                    saveState();
+                    
+                    if (timelineMode) {
+                        addTimelinePoint('Wunder-Vision gespeichert');
+                    }
+                    
+                    showPopup('Vision gespeichert! ✨', 'Deine Wunder-Beschreibung wurde erfolgreich gespeichert.');
+                }
+            }, 'Fehler beim Speichern der Wunder-Antwort');
+        }
+
+        function addPerson() {
+            safeExecute(function() {
+                showPopup('Neue Person hinzufügen 👥', 
+                    '<div style="margin: 20px 0;">' +
+                        '<label style="display: block; margin-bottom: 10px;">Name der Person:</label>' +
+                        '<input type="text" id="personName" class="input-field" placeholder="z.B. Kolleg:in C" maxlength="30">' +
+                        '<label style="display: block; margin: 15px 0 10px 0;">Rolle/Beschreibung:</label>' +
+                        '<input type="text" id="personRole" class="input-field" placeholder="z.B. (Projektleitung)" maxlength="30">' +
+                    '</div>' +
+                    '<div style="text-align: center;">' +
+                        '<button class="btn" onclick="createPerson(); removeAllPopups();">Person erstellen</button>' +
+                        '<button class="btn" onclick="removeAllPopups();">Abbrechen</button>' +
+                    '</div>'
+                );
+            }, 'Fehler beim Anzeigen des Person-Hinzufügen-Dialogs');
+        }
+
+        function createPerson() {
+            safeExecute(function() {
+                const name = document.getElementById('personName').value.trim();
+                const role = document.getElementById('personRole').value.trim();
+                
+                if (!name) {
+                    showPopup('Fehler', 'Bitte gib einen Namen ein.');
+                    return;
+                }
+                
+                const fullName = name + (role ? '\n(' + role + ')' : '');
+                
+                const newMember = {
+                    id: nextId++,
+                    name: fullName,
+                    x: Math.random() * (window.innerWidth - 200) + 100,
+                    y: Math.random() * (window.innerHeight - 300) + 100,
+                    stress: 3,
+                    isSelf: false
+                };
+                
+                members.push(newMember);
+                createMembers();
+                updateConnections();
+                saveState();
+                
+                if (timelineMode) {
+                    addTimelinePoint(`Person hinzugefügt: ${name}`);
+                }
+                
+                showPopup('Person erstellt! ✅', `${name} wurde dem Team hinzugefügt.`);
+            }, 'Fehler beim Erstellen der neuen Person');
+        }
+
+        function exportSystemicWorksheet() {
+            safeExecute(function() {
+                const selfMember = members.find(m => m.isSelf);
+                if (!selfMember) {
+                    showPopup('Hinweis', 'Bitte markiere zuerst eine Person als "Du" (Doppelklick), um ein personalisiertes Arbeitsblatt zu erstellen.');
+                    return;
+                }
+
+                const sessionDate = new Date().toLocaleDateString('de-DE');
+                const worksheet = generateSystemicWorksheet(selfMember, sessionDate);
+                
+                const blob = new Blob([worksheet], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Systemisches_Arbeitsblatt_${sessionDate.replace(/\./g, '_')}.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showPopup('Arbeitsblatt erstellt! 📋', 'Das personalisierte systemische Arbeitsblatt wurde heruntergeladen.');
+            }, 'Fehler beim Erstellen des Arbeitsblatts');
+        }
+
+        function generateSystemicWorksheet(selfMember, sessionDate) {
+            const userPattern = analyzeUserPattern(selfMember);
+            
+            // Analyze response topics for personalization
+            const responseTopics = userResponses.map(r => r.response.toLowerCase()).join(' ');
+            
+            // User responses section (only if responses exist)
+            let userResponsesHTML = '';
+            if (userResponses.length > 0) {
+                userResponsesHTML = '<div class="section"><h2>💬 Deine Reflexionen aus der Session</h2>';
+                userResponses.forEach(response => {
+                    const date = new Date(response.timestamp).toLocaleString('de-DE');
+                    userResponsesHTML += `
+                        <div style="margin: 15px 0; padding: 15px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196F3;">
+                            <strong>${response.type === 'reflection' ? '💭 Reflexion' : response.type === 'scaling' ? '📊 Skalierung' : '✨ Wunderfrage'}:</strong><br>
+                            <em style="color: #666;">"${response.question.length > 80 ? response.question.substring(0, 80) + '...' : response.question}"</em><br>
+                            ${response.value ? `<strong>Bewertung:</strong> ${response.value}/10<br>` : ''}
+                            <strong>Deine Antwort:</strong> "${response.response}"<br>
+                            <small style="color: #888;">${date}</small>
+                        </div>
+                    `;
+                });
+                userResponsesHTML += '</div>';
+            }
+            
+            // Generate SVG constellation(s)
+            let constellationHTML = '<div class="section"><h2>🎨 Team-Konstellation</h2>';
+            constellationHTML += generateConstellationSVG(members, 'Aktuelle Team-Aufstellung');
+            
+            // Add timeline comparison if available
+            if (timelineMode && timelineData.length > 1) {
+                const initialMembers = timelineData[0].members;
+                constellationHTML += generateConstellationSVG(initialMembers, 'Ausgangssituation (Session-Start)', 600, 250);
+                
+                // Quick comparison insight
+                const initialAvgStress = initialMembers.reduce((sum, m) => sum + m.stress, 0) / initialMembers.length;
+                const currentAvgStress = members.reduce((sum, m) => sum + m.stress, 0) / members.length;
+                const stressDiff = currentAvgStress - initialAvgStress;
+                
+                constellationHTML += `<div style="margin: 15px 0; padding: 10px; background: #f0f8ff; border-radius: 5px;">
+                    <strong>📈 Entwicklung:</strong> 
+                    Durchschnittlicher Stress ${stressDiff > 0.2 ? 'gestiegen' : stressDiff < -0.2 ? 'gesunken' : 'stabil geblieben'} 
+                    (${initialAvgStress.toFixed(1)} → ${currentAvgStress.toFixed(1)})
+                </div>`;
+            }
+            constellationHTML += '</div>';
+            
+            // Generate smart, focused tasks and questions
+            const tasks = generateSmartTasks(userPattern, responseTopics);
+            const questions = generateSmartQuestions(userPattern, userResponses);
+            
+            // Tasks HTML (only if tasks exist)
+            let tasksHTML = '';
+            if (tasks.length > 0) {
+                tasksHTML = '<div class="section"><h2>🔍 Beobachtungsaufträge</h2>';
+                tasksHTML += '<p style="color: #666; font-style: italic; margin-bottom: 20px;">Fokussiert auf deine Session-Erkenntnisse:</p>';
+                tasks.forEach(task => {
+                    tasksHTML += `
+                        <div style="margin: 20px 0; padding: 15px; background: #fff8e1; border-radius: 8px; border-left: 4px solid #FF9800;">
+                            <p style="margin: 0 0 10px 0;"><strong>${task}</strong></p>
+                            <div class="note-field">
+                                <strong>📝 Deine Beobachtungen:</strong>
+                                <div class="note-lines">
+                                    <div class="note-line"></div>
+                                    <div class="note-line"></div>
+                                    <div class="note-line"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                tasksHTML += '</div>';
+            }
+            
+            // Questions HTML (only if questions exist)
+            let questionsHTML = '';
+            if (questions.length > 0) {
+                questionsHTML = '<div class="section"><h2>💭 Vertiefende Reflexionsfragen</h2>';
+                questionsHTML += '<p style="color: #666; font-style: italic; margin-bottom: 20px;">Aufbauend auf deinen Antworten:</p>';
+                questions.forEach(question => {
+                    questionsHTML += `
+                        <div style="margin: 20px 0; padding: 15px; background: #f3e5f5; border-radius: 8px; border-left: 4px solid #9C27B0;">
+                            <p style="margin: 0 0 10px 0;"><strong>${question}</strong></p>
+                            <div class="note-field">
+                                <strong>📝 Deine Gedanken:</strong>
+                                <div class="note-lines">
+                                    <div class="note-line"></div>
+                                    <div class="note-line"></div>
+                                    <div class="note-line"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                questionsHTML += '</div>';
+            }
+            
+            return `<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Systemisches Arbeitsblatt - ${sessionDate}</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 21cm; margin: 0 auto; padding: 20px; line-height: 1.6; color: #333; }
+        .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 30px; text-align: center; border-radius: 15px; margin-bottom: 30px; }
+        .section { margin: 25px 0; padding: 20px; border-left: 4px solid #4CAF50; background: #f9f9f9; border-radius: 0 10px 10px 0; }
+        .note-field { margin-top: 15px; padding: 10px; background: #f8f9fa; border: 2px dashed #81C784; border-radius: 8px; }
+        .note-lines { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+        .note-line { height: 20px; border-bottom: 1px solid #81C784; }
+        @media print { body { margin: 0; padding: 15px; font-size: 12px; } svg { max-width: 100%; height: auto; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Systemisches Arbeitsblatt</h1>
+        <p>Reflexions-Radar Session vom ${sessionDate}</p>
+        <p style="font-size: 14px; opacity: 0.9;">Personalisiert für ${userPattern.role} • Stress-Level ${userPattern.userStress}/5</p>
+    </div>
+    <div class="section">
+        <h2>📊 Deine Session-Übersicht</h2>
+        <p><strong>Position im Team:</strong> ${userPattern.position}</p>
+        <p><strong>Reflexionen beantwortet:</strong> ${userResponses.length}</p>
+        <p><strong>Team-Stress-Durchschnitt:</strong> ${(members.reduce((sum, m) => sum + m.stress, 0) / members.length).toFixed(1)}/5</p>
+        ${timelineMode && timelineData.length > 1 ? `<p><strong>Timeline-Entwicklung:</strong> ${timelineData.length} erfasste Veränderungen</p>` : ''}
+    </div>
+    ${constellationHTML}
+    ${userResponsesHTML}
+    ${tasksHTML}
+    ${questionsHTML}
+    <div class="section">
+        <h2>📝 Notizen für das nächste Gespräch</h2>
+        <div class="note-field">
+            <div class="note-lines">
+                <div class="note-line"></div>
+                <div class="note-line"></div>
+                <div class="note-line"></div>
+                <div class="note-line"></div>
+                <div class="note-line"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+        }
+
+        function loadTimelinePoint(index) {
+            safeExecute(function() {
+                if (timelineData[index]) {
+                    const point = timelineData[index];
+                    members = JSON.parse(JSON.stringify(point.members));
+                    connections = JSON.parse(JSON.stringify(point.connections));
+                    userResponses = JSON.parse(JSON.stringify(point.userResponses));
+                    
+                    createMembers();
+                    updateConnections();
+                    updateStats();
+                    updateTimelineSlider();
+                }
+            }, 'Fehler beim Laden des Timeline-Punkts');
+        }
+
+        function analyzeUserPattern(selfMember) {
+            return {
+                role: selfMember.name.split('\n')[0] || 'Teammitglied',
+                userStress: selfMember.stress,
+                position: determinePosition(selfMember)
+            };
+        }
+
+        function determinePosition(selfMember) {
+            const totalMembers = members.length;
+            if (totalMembers <= 2) return 'Zentral';
+            
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            const distance = Math.sqrt(Math.pow(selfMember.x - centerX, 2) + Math.pow(selfMember.y - centerY, 2));
+            
+            if (distance < 100) return 'Zentral';
+            if (distance < 200) return 'Nah zum Zentrum';
+            return 'Peripherie';
+        }
+
+        function showPopup(title, message) {
+            removeAllPopups();
+            
+            const popup = document.createElement('div');
+            popup.className = 'popup';
+            popup.innerHTML = 
+                '<button class="close-btn" onclick="removeAllPopups()">×</button>' +
+                '<h3>' + title + '</h3>' +
+                '<div>' + message + '</div>';
+            
+            document.body.appendChild(popup);
+            
+            setTimeout(function() {
+                if (popup.parentNode) {
+                    removeAllPopups();
+                }
+            }, 10000);
+        }
+
+        function removeAllPopups() {
+            const popups = document.querySelectorAll('.popup');
+            popups.forEach(function(popup) {
+                popup.style.opacity = '0';
+                popup.style.transform = 'translate(-50%, -50%) scale(0.9)';
+                setTimeout(function() {
+                    if (popup.parentNode) {
+                        popup.parentNode.removeChild(popup);
+                    }
+                }, 200);
+            });
+        }
+
+        function setupEventListeners() {
+            safeExecute(function() {
+                // Close more menu on outside click
+                document.addEventListener('click', function(e) {
+                    if (!e.target.closest('.connection-context-menu') && !e.target.closest('#workspaceContextMenu')) {
+                        removeConnectionContextMenu();
+                        removeWorkspaceContextMenu();
+                    }
+                    
+                    if (!e.target.closest('.more-menu-btn')) {
+                        closeMoreMenu();
+                    }
+                });
+
+                // Global mouse events for dragging
+                document.addEventListener('mousemove', function(e) {
+                    drag(e, e.clientX, e.clientY);
+                });
+
+                document.addEventListener('mouseup', endDrag);
+
+                // Global touch events for dragging
+                document.addEventListener('touchmove', function(e) {
+                    if (e.touches.length === 1) {
+                        const touch = e.touches[0];
+                        drag(e, touch.clientX, touch.clientY);
+                    }
+                });
+
+                document.addEventListener('touchend', endDrag);
+
+                // ESC key support
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        removeAllPopups();
+                        removeConnectionContextMenu();
+                    }
+                });
+
+                // Button event listeners
+                document.getElementById('reflectionBtn').addEventListener('click', showReflection);
+                document.getElementById('scalingBtn').addEventListener('click', showScaling);
+                document.getElementById('wonderBtn').addEventListener('click', showWonder);
+                document.getElementById('addPersonBtn').addEventListener('click', addPerson);
+                document.getElementById('worksheetBtn').addEventListener('click', exportSystemicWorksheet);
+                document.getElementById('backBtn').addEventListener('click', goBack);
+                document.getElementById('forwardBtn').addEventListener('click', goForward);
+                document.getElementById('sessionBtn').addEventListener('click', showSessionSummary);
+                document.getElementById('resetBtn').addEventListener('click', resetAll);
+                document.getElementById('settingsBtn').addEventListener('click', showSessionMenu);
+
+                // Workspace right-click for adding connections
+                document.getElementById('workspace').addEventListener('contextmenu', function(e) {
+                    if (e.target.id === 'workspace' || e.target.id === 'radar') {
+                        e.preventDefault();
+                        showWorkspaceContextMenu(e.clientX, e.clientY);
+                    }
+                });
+
+                // Workspace long touch for adding connections
+                let workspaceLongPressTimer;
+                document.getElementById('workspace').addEventListener('touchstart', function(e) {
+                    if (e.target.id === 'workspace' || e.target.id === 'radar') {
+                        workspaceLongPressTimer = setTimeout(() => {
+                            showWorkspaceContextMenu(e.touches[0].clientX, e.touches[0].clientY);
+                        }, 800);
+                    }
+                });
+
+                document.getElementById('workspace').addEventListener('touchend', function(e) {
+                    clearTimeout(workspaceLongPressTimer);
+                });
+
+                document.getElementById('workspace').addEventListener('touchmove', function(e) {
+                    clearTimeout(workspaceLongPressTimer);
+                });
+            }, 'Fehler beim Einrichten der Event-Listener');
+        }
+
+        // NEW: Workspace Context Menu for Adding Connections
+        function showWorkspaceContextMenu(x, y) {
+            safeExecute(function() {
+                removeConnectionContextMenu();
+                
+                const menu = document.createElement('div');
+                menu.className = 'connection-context-menu';
+                menu.id = 'workspaceContextMenu';
+                menu.style.position = 'fixed';
+                menu.style.left = x + 'px';
+                menu.style.top = y + 'px';
+                menu.classList.add('active');
+                
+                menu.innerHTML = `
+                    <button class="context-menu-item" onclick="showAddConnectionDialog(); removeWorkspaceContextMenu();">
+                        <span>🔗</span> Neue Verbindung hinzufügen
+                    </button>
+                `;
+                
+                document.body.appendChild(menu);
+                
+                // Auto-close after 5 seconds
+                setTimeout(() => {
+                    removeWorkspaceContextMenu();
+                }, 5000);
+                
+                // Close on outside click
+                setTimeout(() => {
+                    document.addEventListener('click', removeWorkspaceContextMenu, { once: true });
+                }, 100);
+            }, 'Fehler beim Anzeigen des Workspace-Kontextmenüs');
+        }
+
+        // Navigation Functions
+        function goBack() {
+            safeExecute(function() {
+                if (currentStateIndex > 0) {
+                    currentStateIndex--;
+                    const state = stateHistory[currentStateIndex];
+                    
+                    members = JSON.parse(JSON.stringify(state.members));
+                    connections = JSON.parse(JSON.stringify(state.connections));
+                    userResponses = JSON.parse(JSON.stringify(state.userResponses));
+                    
+                    createMembers();
+                    updateConnections();
+                    updateNavigationButtons();
+                    
+                    if (timelineMode) {
+                        addTimelinePoint('Schritt rückgängig');
+                    }
+                    
+                    showPopup('Schritt rückgängig ↩️', 'Der letzte Schritt wurde rückgängig gemacht.');
+                }
+            }, 'Fehler beim Rückgängigmachen');
+        }
+
+        function goForward() {
+            safeExecute(function() {
+                if (currentStateIndex < stateHistory.length - 1) {
+                    currentStateIndex++;
+                    const state = stateHistory[currentStateIndex];
+                    
+                    members = JSON.parse(JSON.stringify(state.members));
+                    connections = JSON.parse(JSON.stringify(state.connections));
+                    userResponses = JSON.parse(JSON.stringify(state.userResponses));
+                    
+                    createMembers();
+                    updateConnections();
+                    updateNavigationButtons();
+                    
+                    if (timelineMode) {
+                        addTimelinePoint('Schritt wiederholt');
+                    }
+                    
+                    showPopup('Schritt wiederholt ↪️', 'Der Schritt wurde wiederholt.');
+                }
+            }, 'Fehler beim Wiederholen');
+        }
+
+        function updateNavigationButtons() {
+            safeExecute(function() {
+                const backBtn = document.getElementById('backBtn');
+                const forwardBtn = document.getElementById('forwardBtn');
+                
+                if (backBtn) {
+                    backBtn.disabled = currentStateIndex <= 0;
+                }
+                if (forwardBtn) {
+                    forwardBtn.disabled = currentStateIndex >= stateHistory.length - 1;
+                }
+            }, 'Fehler beim Aktualisieren der Navigation');
+        }
+
+        // Session Management Functions
+        function showSessionMenu() {
+            safeExecute(function() {
+                document.getElementById('sessionOverlay').classList.add('active');
+                document.getElementById('sessionMenu').classList.add('active');
+                loadSavedSessionsList();
+            }, 'Fehler beim Öffnen des Session-Menüs');
+        }
+
+        function closeSessionMenu() {
+            safeExecute(function() {
+                document.getElementById('sessionOverlay').classList.remove('active');
+                document.getElementById('sessionMenu').classList.remove('active');
+            }, 'Fehler beim Schließen des Session-Menüs');
+        }
+
+        function showSessionSummary() {
+            safeExecute(function() {
+                const sessionTime = new Date().toLocaleString('de-DE');
+                const totalChanges = stateHistory.length - 1;
+                const totalResponses = userResponses.length;
+                
+                let summaryHTML = '<h4>📊 Session-Übersicht</h4>';
+                summaryHTML += `<p><strong>Zeit:</strong> ${sessionTime}</p>`;
+                summaryHTML += `<p><strong>Teammitglieder:</strong> ${members.length}</p>`;
+                summaryHTML += `<p><strong>Verbindungen:</strong> ${connections.length}</p>`;
+                summaryHTML += `<p><strong>Änderungen:</strong> ${totalChanges}</p>`;
+                summaryHTML += `<p><strong>Reflexionen:</strong> ${totalResponses}</p>`;
+                
+                if (timelineMode && timelineData.length > 0) {
+                    summaryHTML += `<p><strong>Timeline-Punkte:</strong> ${timelineData.length}</p>`;
+                }
+                
+                showPopup('Session-Übersicht 📄', summaryHTML);
+            }, 'Fehler beim Anzeigen der Session-Übersicht');
+        }
+
+        function resetAll() {
+            safeExecute(function() {
+                showPopup('Session zurücksetzen? 🔄', 
+                    '<p>Möchtest du wirklich eine neue Session starten? Alle aktuellen Daten gehen verloren.</p>' +
+                    '<div style="text-align: center; margin-top: 20px;">' +
+                        '<button class="btn" onclick="confirmReset(); removeAllPopups();" style="background: rgba(244, 67, 54, 0.3);">Ja, zurücksetzen</button>' +
+                        '<button class="btn" onclick="removeAllPopups();">Abbrechen</button>' +
+                    '</div>'
+                );
+            }, 'Fehler beim Reset-Dialog');
+        }
+
+        function confirmReset() {
+            safeExecute(function() {
+                // Reset to initial state
+                members = [
+                    { id: 1, name: 'Du\n(Selbstreflexion)', x: 200, y: 150, stress: 3, isSelf: true },
+                    { id: 2, name: 'Kolleg:in A\n(Support)', x: 400, y: 250, stress: 2 },
+                    { id: 3, name: 'Kolleg:in B\n(Fachlich)', x: 300, y: 400, stress: 4 },
+                    { id: 4, name: 'Leitung\n(Entscheidungen)', x: 600, y: 200, stress: 3 }
+                ];
+                
+                connections = [];
+                userResponses = [];
+                stateHistory = [];
+                currentStateIndex = -1;
+                nextId = 5;
+                currentSessionId = 'session_' + Date.now();
+                
+                // Reset timeline
+                if (timelineMode) {
+                    TimelineManager.initializeTimeline();
+                } else {
+                    timelineData = [];
+                    currentTimelineIndex = 0;
+                }
+                
+                initConnections();
+                createMembers();
+                updateConnections();
+                saveState();
+                updateNavigationButtons();
+                
+                showPopup('Session zurückgesetzt! 🔄', 'Eine neue Session wurde gestartet. Alle Daten wurden zurückgesetzt.');
+            }, 'Fehler beim Zurücksetzen der Session');
+        }
+
+        // Session Save/Load Functions  
+        function saveCurrentSession() {
+            safeExecute(function() {
+                const sessionName = document.getElementById('saveSessionName').value.trim();
+                if (!sessionName) {
+                    showPopup('Fehler', 'Bitte gib einen Session-Namen ein.');
+                    return;
+                }
+                
+                const sessionData = {
+                    name: sessionName,
+                    timestamp: Date.now(),
+                    members: JSON.parse(JSON.stringify(members)),
+                    connections: JSON.parse(JSON.stringify(connections)),
+                    userResponses: JSON.parse(JSON.stringify(userResponses)),
+                    stateHistory: JSON.parse(JSON.stringify(stateHistory)),
+                    timelineData: timelineMode ? JSON.parse(JSON.stringify(timelineData)) : [],
+                    sessionId: currentSessionId
+                };
+                
+                // Save to localStorage
+                const savedSessions = JSON.parse(localStorage.getItem('reflexionsRadarSessions') || '[]');
+                savedSessions.push(sessionData);
+                localStorage.setItem('reflexionsRadarSessions', JSON.stringify(savedSessions));
+                
+                document.getElementById('saveSessionName').value = '';
+                loadSavedSessionsList();
+                
+                showPopup('Session gespeichert! 💾', `Die Session "${sessionName}" wurde erfolgreich gespeichert.`);
+            }, 'Fehler beim Speichern der Session');
+        }
+
+        function loadSavedSessionsList() {
+            safeExecute(function() {
+                const savedSessions = JSON.parse(localStorage.getItem('reflexionsRadarSessions') || '[]');
+                const listContainer = document.getElementById('savedSessionsList');
+                
+                if (savedSessions.length === 0) {
+                    listContainer.innerHTML = '<p style="color: #ccc; font-style: italic; text-align: center; padding: 20px;">Noch keine Sessions gespeichert</p>';
+                    return;
+                }
+                
+                let listHTML = '';
+                savedSessions.reverse().forEach((session, index) => {
+                    const date = new Date(session.timestamp).toLocaleDateString('de-DE');
+                    const time = new Date(session.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                    
+                    listHTML += `
+                        <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: white;">${session.name}</strong><br>
+                                    <small style="color: #ccc;">${date} ${time}</small>
+                                </div>
+                                <div>
+                                    <button class="btn" onclick="loadSession(${savedSessions.length - 1 - index})" style="font-size: 12px; padding: 4px 8px; margin: 2px;">Laden</button>
+                                    <button class="btn" onclick="deleteSession(${savedSessions.length - 1 - index})" style="font-size: 12px; padding: 4px 8px; margin: 2px; background: rgba(244, 67, 54, 0.3);">Löschen</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                listContainer.innerHTML = listHTML;
+            }, 'Fehler beim Laden der Session-Liste');
+        }
+
+        function loadSession(index) {
+            safeExecute(function() {
+                const savedSessions = JSON.parse(localStorage.getItem('reflexionsRadarSessions') || '[]');
+                if (!savedSessions[index]) return;
+                
+                const sessionData = savedSessions[index];
+                
+                members = JSON.parse(JSON.stringify(sessionData.members));
+                connections = JSON.parse(JSON.stringify(sessionData.connections));
+                userResponses = JSON.parse(JSON.stringify(sessionData.userResponses));
+                stateHistory = JSON.parse(JSON.stringify(sessionData.stateHistory));
+                currentStateIndex = stateHistory.length - 1;
+                
+                if (sessionData.timelineData && sessionData.timelineData.length > 0) {
+                    timelineData = JSON.parse(JSON.stringify(sessionData.timelineData));
+                    currentTimelineIndex = timelineData.length - 1;
+                }
+                
+                createMembers();
+                updateConnections();
+                updateNavigationButtons();
+                closeSessionMenu();
+                
+                showPopup('Session geladen! 📁', `Die Session "${sessionData.name}" wurde erfolgreich geladen.`);
+            }, 'Fehler beim Laden der Session');
+        }
+
+        function deleteSession(index) {
+            safeExecute(function() {
+                const savedSessions = JSON.parse(localStorage.getItem('reflexionsRadarSessions') || '[]');
+                if (!savedSessions[index]) return;
+                
+                const sessionName = savedSessions[index].name;
+                savedSessions.splice(index, 1);
+                localStorage.setItem('reflexionsRadarSessions', JSON.stringify(savedSessions));
+                
+                loadSavedSessionsList();
+                showPopup('Session gelöscht! 🗑️', `Die Session "${sessionName}" wurde gelöscht.`);
+            }, 'Fehler beim Löschen der Session');
+        }
+
+        function exportSession() {
+            safeExecute(function() {
+                const sessionData = {
+                    exportDate: new Date().toISOString(),
+                    appVersion: '1.0',
+                    members: members,
+                    connections: connections,
+                    userResponses: userResponses,
+                    stateHistory: stateHistory,
+                    timelineData: timelineMode ? timelineData : [],
+                    sessionId: currentSessionId
+                };
+                
+                const blob = new Blob([JSON.stringify(sessionData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `reflexions_radar_session_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showPopup('Session exportiert! 📤', 'Die Session wurde als JSON-Datei heruntergeladen.');
+            }, 'Fehler beim Exportieren der Session');
+        }
+
+        // Enhanced Session Management
+        var autoSaveEnabled = true;
+        var autoSaveInterval = null;
+        var sessionSearchTerm = '';
+
+        function initAutoSave() {
+            if (autoSaveEnabled) {
+                autoSaveInterval = setInterval(function() {
+                    autoSaveCurrentSession();
+                }, 30000); // Auto-save every 30 seconds
+            }
+        }
+
+        function autoSaveCurrentSession() {
+            safeExecute(function() {
+                if (members.length === 0) return; // Don't auto-save empty sessions
+                
+                const autoSaveName = `AutoSave_${new Date().toLocaleDateString('de-DE')}_${new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+                
+                const sessionData = {
+                    name: autoSaveName,
+                    timestamp: Date.now(),
+                    isAutoSave: true,
+                    members: JSON.parse(JSON.stringify(members)),
+                    connections: JSON.parse(JSON.stringify(connections)),
+                    userResponses: JSON.parse(JSON.stringify(userResponses)),
+                    stateHistory: JSON.parse(JSON.stringify(stateHistory)),
+                    timelineData: timelineMode ? JSON.parse(JSON.stringify(timelineData)) : [],
+                    sessionId: currentSessionId
+                };
+                
+                // Keep only last 3 auto-saves
+                const savedSessions = JSON.parse(localStorage.getItem('reflexionsRadarSessions') || '[]');
+                const autoSaves = savedSessions.filter(s => s.isAutoSave);
+                const manualSaves = savedSessions.filter(s => !s.isAutoSave);
+                
+                if (autoSaves.length >= 3) {
+                    autoSaves.shift(); // Remove oldest auto-save
+                }
+                
+                autoSaves.push(sessionData);
+                const allSessions = [...manualSaves, ...autoSaves];
+                localStorage.setItem('reflexionsRadarSessions', JSON.stringify(allSessions));
+                
+                showAutoSaveIndicator();
+            }, 'Fehler beim automatischen Speichern');
+        }
+
+        function showAutoSaveIndicator() {
+            const indicator = document.getElementById('autoSaveIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+
+        function searchSessions() {
+            sessionSearchTerm = document.getElementById('sessionSearchInput').value.toLowerCase();
+            loadSavedSessionsList();
+        }
+
+        function loadSavedSessionsList() {
+            safeExecute(function() {
+                const savedSessions = JSON.parse(localStorage.getItem('reflexionsRadarSessions') || '[]');
+                const listContainer = document.getElementById('savedSessionsList');
+                const sessionCount = document.getElementById('sessionCount');
+                
+                // Filter sessions based on search term
+                let filteredSessions = savedSessions;
+                if (sessionSearchTerm) {
+                    filteredSessions = savedSessions.filter(session => 
+                        session.name.toLowerCase().includes(sessionSearchTerm)
+                    );
+                }
+                
+                // Update session count
+                sessionCount.textContent = `${filteredSessions.length} Session${filteredSessions.length !== 1 ? 's' : ''}`;
+                
+                if (filteredSessions.length === 0) {
+                    listContainer.innerHTML = sessionSearchTerm ? 
+                        '<p style="color: #ccc; font-style: italic; text-align: center; padding: 20px;">Keine Sessions gefunden</p>' :
+                        '<p style="color: #ccc; font-style: italic; text-align: center; padding: 20px;">Noch keine Sessions gespeichert</p>';
+                    return;
+                }
+                
+                let listHTML = '';
+                filteredSessions.reverse().forEach((session, index) => {
+                    const originalIndex = savedSessions.indexOf(session);
+                    const date = new Date(session.timestamp).toLocaleDateString('de-DE');
+                    const time = new Date(session.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                    const isAutoSave = session.isAutoSave;
+                    
+                    const memberCount = session.members ? session.members.length : 0;
+                    const connectionCount = session.connections ? session.connections.length : 0;
+                    const responseCount = session.userResponses ? session.userResponses.length : 0;
+                    
+                    listHTML += `
+                        <div class="session-item">
+                            <div class="session-item-header">
+                                <div>
+                                    <div class="session-item-title">
+                                        ${isAutoSave ? '💾 ' : ''}${session.name}
+                                    </div>
+                                    <div class="session-item-date">${date} ${time}</div>
+                                </div>
+                            </div>
+                            <div class="session-item-stats">
+                                👥 ${memberCount} Personen • 🔗 ${connectionCount} Verbindungen • 💭 ${responseCount} Reflexionen
+                            </div>
+                            <div class="session-item-actions">
+                                <button class="btn session-btn-small session-btn-load" onclick="loadSession(${originalIndex})">📁 Laden</button>
+                                <button class="btn session-btn-small session-btn-export" onclick="exportSingleSession(${originalIndex})">📤 Export</button>
+                                <button class="btn session-btn-small session-btn-delete" onclick="deleteSession(${originalIndex})">🗑️ Löschen</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                listContainer.innerHTML = listHTML;
+            }, 'Fehler beim Laden der Session-Liste');
+        }
+
+        function exportSingleSession(index) {
+            safeExecute(function() {
+                const savedSessions = JSON.parse(localStorage.getItem('reflexionsRadarSessions') || '[]');
+                if (!savedSessions[index]) return;
+                
+                const session = savedSessions[index];
+                const sessionData = {
+                    exportDate: new Date().toISOString(),
+                    appVersion: '1.0',
+                    sessionName: session.name,
+                    members: session.members,
+                    connections: session.connections,
+                    userResponses: session.userResponses,
+                    stateHistory: session.stateHistory,
+                    timelineData: session.timelineData || [],
+                    sessionId: session.sessionId
+                };
+                
+                const blob = new Blob([JSON.stringify(sessionData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${session.name.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showPopup('Session exportiert! 📤', `Die Session "${session.name}" wurde als JSON-Datei heruntergeladen.`);
+            }, 'Fehler beim Exportieren der Session');
+        }
+
+        function clearAllSessions() {
+            safeExecute(function() {
+                const savedSessions = JSON.parse(localStorage.getItem('reflexionsRadarSessions') || '[]');
+                if (savedSessions.length === 0) {
+                    showPopup('Keine Sessions', 'Es sind keine Sessions zum Löschen vorhanden.');
+                    return;
+                }
+                
+                showPopup('Alle Sessions löschen? 🗑️', 
+                    `<p>Möchtest du wirklich alle ${savedSessions.length} gespeicherten Sessions löschen? Diese Aktion kann nicht rückgängig gemacht werden.</p>` +
+                    '<div style="text-align: center; margin-top: 20px;">' +
+                        '<button class="btn" onclick="confirmClearAllSessions(); removeAllPopups();" style="background: rgba(244, 67, 54, 0.3);">Ja, alle löschen</button>' +
+                        '<button class="btn" onclick="removeAllPopups();">Abbrechen</button>' +
+                    '</div>'
+                );
+            }, 'Fehler beim Löschen aller Sessions');
+        }
+
+        function confirmClearAllSessions() {
+            safeExecute(function() {
+                localStorage.removeItem('reflexionsRadarSessions');
+                loadSavedSessionsList();
+                showPopup('Alle Sessions gelöscht! 🗑️', 'Alle gespeicherten Sessions wurden erfolgreich gelöscht.');
+            }, 'Fehler beim Bestätigen des Löschens');
+        }
+
+        function loadSession(index) {
+            safeExecute(function() {
+                const savedSessions = JSON.parse(localStorage.getItem('reflexionsRadarSessions') || '[]');
+                if (!savedSessions[index]) return;
+                
+                const sessionData = savedSessions[index];
+                
+                // Show loading confirmation
+                showPopup('Session laden? 📁', 
+                    `<p>Möchtest du die Session "<strong>${sessionData.name}</strong>" laden? Alle aktuellen Änderungen gehen verloren, wenn sie nicht gespeichert wurden.</p>` +
+                    '<div style="text-align: center; margin-top: 20px;">' +
+                        `<button class="btn" onclick="confirmLoadSession(${index}); removeAllPopups();" style="background: rgba(76, 175, 80, 0.3);">Ja, laden</button>` +
+                        '<button class="btn" onclick="removeAllPopups();">Abbrechen</button>' +
+                    '</div>'
+                );
+            }, 'Fehler beim Laden der Session');
+        }
+
+        function confirmLoadSession(index) {
+            safeExecute(function() {
+                const savedSessions = JSON.parse(localStorage.getItem('reflexionsRadarSessions') || '[]');
+                if (!savedSessions[index]) return;
+                
+                const sessionData = savedSessions[index];
+                
+                members = JSON.parse(JSON.stringify(sessionData.members));
+                connections = JSON.parse(JSON.stringify(sessionData.connections));
+                userResponses = JSON.parse(JSON.stringify(sessionData.userResponses || []));
+                stateHistory = JSON.parse(JSON.stringify(sessionData.stateHistory || []));
+                currentStateIndex = stateHistory.length - 1;
+                
+                if (sessionData.timelineData && sessionData.timelineData.length > 0) {
+                    timelineData = JSON.parse(JSON.stringify(sessionData.timelineData));
+                    currentTimelineIndex = timelineData.length - 1;
+                    if (!timelineMode) {
+                        TimelineManager.toggle(); // Activate timeline if session had timeline data
+                    }
+                }
+                
+                // Update session ID to continue with loaded session
+                currentSessionId = sessionData.sessionId || 'session_' + Date.now();
+                
+                createMembers();
+                updateConnections();
+                updateNavigationButtons();
+                closeSessionMenu();
+                
+                showPopup('Session geladen! 📁', `Die Session "${sessionData.name}" wurde erfolgreich geladen.`);
+            }, 'Fehler beim Bestätigen des Ladens');
+        }
+
+        function deleteSession(index) {
+            safeExecute(function() {
+                const savedSessions = JSON.parse(localStorage.getItem('reflexionsRadarSessions') || '[]');
+                if (!savedSessions[index]) return;
+                
+                const sessionName = savedSessions[index].name;
+                
+                showPopup('Session löschen? 🗑️', 
+                    `<p>Möchtest du die Session "<strong>${sessionName}</strong>" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</p>` +
+                    '<div style="text-align: center; margin-top: 20px;">' +
+                        `<button class="btn" onclick="confirmDeleteSession(${index}); removeAllPopups();" style="background: rgba(244, 67, 54, 0.3);">Ja, löschen</button>` +
+                        '<button class="btn" onclick="removeAllPopups();">Abbrechen</button>' +
+                    '</div>'
+                );
+            }, 'Fehler beim Löschen der Session');
+        }
+
+        function confirmDeleteSession(index) {
+            safeExecute(function() {
+                const savedSessions = JSON.parse(localStorage.getItem('reflexionsRadarSessions') || '[]');
+                if (!savedSessions[index]) return;
+                
+                const sessionName = savedSessions[index].name;
+                savedSessions.splice(index, 1);
+                localStorage.setItem('reflexionsRadarSessions', JSON.stringify(savedSessions));
+                
+                loadSavedSessionsList();
+                showPopup('Session gelöscht! 🗑️', `Die Session "${sessionName}" wurde erfolgreich gelöscht.`);
+            }, 'Fehler beim Bestätigen des Löschens');
+        }
+
+        // Enhanced Import with better validation
+        function importSession(event) {
+            safeExecute(function() {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const sessionData = JSON.parse(e.target.result);
+                        
+                        // Detailed validation
+                        if (!sessionData.members || !Array.isArray(sessionData.members)) {
+                            throw new Error('Ungültige Session-Datei: Keine Teammitglieder gefunden');
+                        }
+                        
+                        if (!sessionData.connections || !Array.isArray(sessionData.connections)) {
+                            throw new Error('Ungültige Session-Datei: Keine Verbindungen gefunden');
+                        }
+                        
+                        // Show import preview
+                        const memberCount = sessionData.members.length;
+                        const connectionCount = sessionData.connections.length;
+                        const responseCount = sessionData.userResponses ? sessionData.userResponses.length : 0;
+                        const sessionName = sessionData.sessionName || 'Importierte Session';
+                        
+                        showPopup('Session importieren? 📥', 
+                            `<p>Session-Vorschau:</p>` +
+                            `<p><strong>Name:</strong> ${sessionName}</p>` +
+                            `<p><strong>Inhalt:</strong> ${memberCount} Personen, ${connectionCount} Verbindungen, ${responseCount} Reflexionen</p>` +
+                            `<p>Möchtest du diese Session importieren? Aktuelle Änderungen gehen verloren.</p>` +
+                            '<div style="text-align: center; margin-top: 20px;">' +
+                                '<button class="btn" onclick="confirmImportSession(); removeAllPopups();" style="background: rgba(33, 150, 243, 0.3);">Ja, importieren</button>' +
+                                '<button class="btn" onclick="removeAllPopups();">Abbrechen</button>' +
+                            '</div>'
+                        );
+                        
+                        // Store session data temporarily for import
+                        window.pendingImportData = sessionData;
+                        
+                    } catch (error) {
+                        showPopup('Import-Fehler', `Die Datei konnte nicht importiert werden: ${error.message}`);
+                    }
+                };
+                reader.readAsText(file);
+                
+                // Reset file input
+                event.target.value = '';
+            }, 'Fehler beim Importieren der Session');
+        }
+
+        // Stats and UI Management
+        var sessionStartTime = Date.now();
+
+        function updateStats() {
+            safeExecute(function() {
+                // Update member count
+                document.getElementById('memberCount').textContent = members.length;
+                
+                // Update connection count
+                document.getElementById('connectionCount').textContent = connections.length;
+                
+                // Update response count
+                document.getElementById('responseCount').textContent = userResponses.length;
+                
+                // Update session time
+                updateSessionTime();
+                
+                // Update team health
+                updateTeamHealth();
+            }, 'Fehler beim Aktualisieren der Statistiken');
+        }
+
+        function updateSessionTime() {
+            const sessionDuration = Date.now() - sessionStartTime;
+            const minutes = Math.floor(sessionDuration / 60000);
+            const seconds = Math.floor((sessionDuration % 60000) / 1000);
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('sessionTime').textContent = timeString;
+        }
+
+        function updateTeamHealth() {
+            safeExecute(function() {
+                if (members.length === 0) return;
+                
+                // Calculate average stress level
+                const totalStress = members.reduce((sum, member) => sum + member.stress, 0);
+                const avgStress = totalStress / members.length;
+                
+                console.log('Team health update - avgStress:', avgStress, 'members:', members.length);
+                
+                // Calculate health percentage (inverted stress - higher health = lower stress)
+                const healthPercentage = Math.max(0, Math.min(100, ((5 - avgStress) / 4) * 100));
+                
+                const healthFill = document.getElementById('healthFill');
+                const healthLabel = document.getElementById('healthLabel');
+                
+                if (!healthFill || !healthLabel) {
+                    console.error('Health elements not found!');
+                    return;
+                }
+                
+                // Update width with animation
+                healthFill.style.width = healthPercentage + '%';
+                
+                // Remove existing health classes
+                healthFill.className = 'health-fill';
+                
+                // Determine health status and color
+                let statusText = '';
+                if (healthPercentage >= 80) {
+                    healthFill.classList.add('health-excellent');
+                    statusText = 'Entspannt';
+                } else if (healthPercentage >= 60) {
+                    healthFill.classList.add('health-good');
+                    statusText = 'Ausgeglichen';
+                } else if (healthPercentage >= 40) {
+                    healthFill.classList.add('health-moderate');
+                    statusText = 'Angespannt';
+                } else if (healthPercentage >= 20) {
+                    healthFill.classList.add('health-concerning');
+                    statusText = 'Gestresst';
+                } else {
+                    healthFill.classList.add('health-critical');
+                    statusText = 'Überlastet';
+                }
+                
+                healthLabel.textContent = statusText;
+                console.log('Health updated to:', statusText, 'with', healthPercentage + '%');
+                
+            }, 'Fehler beim Aktualisieren der Team-Gesundheit');
+        }
+
+        // More Menu Management
+        function toggleMoreMenu() {
+            safeExecute(function() {
+                const dropdown = document.getElementById('moreMenuDropdown');
+                dropdown.classList.toggle('active');
+            }, 'Fehler beim Umschalten des More-Menüs');
+        }
+
+        function closeMoreMenu() {
+            safeExecute(function() {
+                document.getElementById('moreMenuDropdown').classList.remove('active');
+            }, 'Fehler beim Schließen des More-Menüs');
+        }
+
+        // Enhanced UI Functions
+        function toggleStatsPanel() {
+            safeExecute(function() {
+                const panel = document.getElementById('statsPanel');
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            }, 'Fehler beim Umschalten des Stats-Panels');
+        }
+
+        function toggleStressLegend() {
+            safeExecute(function() {
+                const legend = document.getElementById('stressLegend');
+                legend.style.display = legend.style.display === 'none' ? 'block' : 'none';
+            }, 'Fehler beim Umschalten der Stress-Legende');
+        }
+
+        // Update stats interval
+        function initStatsUpdater() {
+            // Update session time every second
+            setInterval(updateSessionTime, 1000);
+            
+            // Update other stats when needed (called from other functions)
+            updateStats();
+        }
+
+        // Timeline Functions
+        function previousTimelinePoint() {
+            safeExecute(function() {
+                if (currentTimelineIndex > 0) {
+                    currentTimelineIndex--;
+                    loadTimelinePoint(currentTimelineIndex);
+                    TimelineManager.updateTimelineUI();
+                }
+            }, 'Fehler beim Laden des vorherigen Timeline-Punkts');
+        }
+
+        function nextTimelinePoint() {
+            safeExecute(function() {
+                if (currentTimelineIndex < timelineData.length - 1) {
+                    currentTimelineIndex++;
+                    loadTimelinePoint(currentTimelineIndex);
+                    TimelineManager.updateTimelineUI();
+                }
+            }, 'Fehler beim Laden des nächsten Timeline-Punkts');
+        }
+
+        function toggleTimelinePlayback() {
+            safeExecute(function() {
+                timelinePlay = !timelinePlay;
+                const playBtn = document.getElementById('playBtn');
+                
+                if (timelinePlay) {
+                    playBtn.textContent = '⏸️';
+                    timelineInterval = setInterval(() => {
+                        if (currentTimelineIndex < timelineData.length - 1) {
+                            nextTimelinePoint();
+                        } else {
+                            toggleTimelinePlayback();
+                        }
+                    }, 2000 / timelineSpeed);
+                } else {
+                    playBtn.textContent = '▶️';
+                    if (timelineInterval) {
+                        clearInterval(timelineInterval);
+                        timelineInterval = null;
+                    }
+                }
+            }, 'Fehler beim Timeline-Playback');
+        }
+
+        // Enhanced Timeline Functions
+        function updateTimelineSlider() {
+            safeExecute(function() {
+                if (timelineData.length <= 1) return;
+                
+                const progress = document.getElementById('timelineProgress');
+                const thumb = document.getElementById('timelineThumb');
+                const info = document.getElementById('timelineInfo');
+                
+                const percentage = (currentTimelineIndex / (timelineData.length - 1)) * 100;
+                
+                if (progress) progress.style.width = percentage + '%';
+                if (thumb) thumb.style.left = percentage + '%';
+                if (info) info.textContent = `Punkt ${currentTimelineIndex + 1} von ${timelineData.length}`;
+            }, 'Fehler beim Aktualisieren des Timeline-Sliders');
+        }
+
+        function jumpToTimelinePosition(event) {
+            safeExecute(function() {
+                if (timelineData.length <= 1) return;
+                
+                const slider = document.getElementById('timelineSlider');
+                const rect = slider.getBoundingClientRect();
+                const clickX = event.clientX - rect.left;
+                const percentage = clickX / rect.width;
+                const targetIndex = Math.round(percentage * (timelineData.length - 1));
+                
+                if (targetIndex >= 0 && targetIndex < timelineData.length) {
+                    currentTimelineIndex = targetIndex;
+                    loadTimelinePoint(currentTimelineIndex);
+                    updateTimelineSlider();
+                    
+                    // Show tooltip briefly
+                    showTimelineTooltip(targetIndex);
+                }
+            }, 'Fehler beim Springen zur Timeline-Position');
+        }
+
+        function showTimelineTooltip(index) {
+            safeExecute(function() {
+                const tooltip = document.getElementById('timelineTooltip');
+                if (timelineData[index] && tooltip) {
+                    tooltip.textContent = timelineData[index].description || `Punkt ${index + 1}`;
+                    tooltip.classList.add('show');
+                    
+                    setTimeout(() => {
+                        tooltip.classList.remove('show');
+                    }, 2000);
+                }
+            }, 'Fehler beim Anzeigen des Timeline-Tooltips');
+        }
+
+        function changeTimelineSpeed(speed) {
+            safeExecute(function() {
+                timelineSpeed = speed;
+                
+                // Update active speed button
+                document.querySelectorAll('.speed-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                // Restart playback with new speed if currently playing
+                if (timelinePlay) {
+                    if (timelineInterval) {
+                        clearInterval(timelineInterval);
+                    }
+                    timelineInterval = setInterval(() => {
+                        if (currentTimelineIndex < timelineData.length - 1) {
+                            nextTimelinePoint();
+                        } else {
+                            toggleTimelinePlayback();
+                        }
+                    }, 2000 / timelineSpeed);
+                }
+            }, 'Fehler beim Ändern der Timeline-Geschwindigkeit');
+        }
+
+        function stopTimelinePlayback() {
+            safeExecute(function() {
+                if (timelineInterval) {
+                    clearInterval(timelineInterval);
+                    timelineInterval = null;
+                }
+                timelinePlay = false;
+                document.getElementById('playBtn').textContent = '▶️';
+                
+                // Reset to beginning
+                currentTimelineIndex = 0;
+                loadTimelinePoint(0);
+                updateTimelineSlider();
+                
+                showPopup('Timeline gestoppt ⏹️', 'Timeline wurde gestoppt und auf den Anfang zurückgesetzt.');
+            }, 'Fehler beim Stoppen der Timeline');
+        }
+
+        // SVG Constellation Generator
+        function generateConstellationSVG(teamMembers, title, width = 600, height = 300) {
+            // Scale positions to fit in SVG viewport
+            const maxX = Math.max(...teamMembers.map(m => m.x));
+            const maxY = Math.max(...teamMembers.map(m => m.y));
+            const minX = Math.min(...teamMembers.map(m => m.x));
+            const minY = Math.min(...teamMembers.map(m => m.y));
+            
+            const scaleX = (width - 120) / Math.max(maxX - minX, 100);
+            const scaleY = (height - 120) / Math.max(maxY - minY, 100);
+            const scale = Math.min(scaleX, scaleY, 1);
+            
+            let svg = `<div style="margin: 20px 0; page-break-inside: avoid;">
+                <h4 style="color: #667eea; margin-bottom: 15px;">${title}</h4>
+                <svg width="${width}" height="${height}" style="border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9;">
+                    <defs>
+                        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+                        </filter>
+                    </defs>`;
+            
+            // Draw connections first (so they appear behind circles)
+            const relevantConnections = connections.filter(conn => {
+                return teamMembers.some(m => m.id === conn.from) && teamMembers.some(m => m.id === conn.to);
+            });
+            
+            relevantConnections.forEach(conn => {
+                const fromMember = teamMembers.find(m => m.id === conn.from);
+                const toMember = teamMembers.find(m => m.id === conn.to);
+                
+                if (fromMember && toMember) {
+                    const fromX = (fromMember.x - minX) * scale + 60;
+                    const fromY = (fromMember.y - minY) * scale + 60;
+                    const toX = (toMember.x - minX) * scale + 60;
+                    const toY = (toMember.y - minY) * scale + 60;
+                    
+                    svg += `<line x1="${fromX}" y1="${fromY}" x2="${toX}" y2="${toY}" 
+                            stroke="#81C784" stroke-width="2" opacity="0.6"/>`;
+                    
+                    // Connection emoji
+                    const midX = (fromX + toX) / 2;
+                    const midY = (fromY + toY) / 2;
+                    svg += `<circle cx="${midX}" cy="${midY}" r="12" fill="white" stroke="#81C784" stroke-width="1"/>
+                            <text x="${midX}" y="${midY + 4}" text-anchor="middle" font-size="10">${conn.emoji || '🤝'}</text>`;
+                }
+            });
+            
+            // Draw team members
+            teamMembers.forEach(member => {
+                const scaledX = (member.x - minX) * scale + 60;
+                const scaledY = (member.y - minY) * scale + 60;
+                const memberName = member.name.split('\n')[0];
+                const memberRole = member.name.split('\n')[1] || '';
+                
+                // Stress color mapping
+                const stressColors = {
+                    1: '#4CAF50', 2: '#8BC34A', 3: '#FFEB3B', 4: '#FF9800', 5: '#f44336'
+                };
+                const fillColor = stressColors[member.stress] || '#81C784';
+                
+                // Circle with stress color
+                svg += `<circle cx="${scaledX}" cy="${scaledY}" r="25" 
+                        fill="${fillColor}" stroke="${member.isSelf ? '#2196F3' : '#fff'}" 
+                        stroke-width="${member.isSelf ? '4' : '2'}" filter="url(#shadow)"/>`;
+                
+                // Name text
+                svg += `<text x="${scaledX}" y="${scaledY - 2}" text-anchor="middle" 
+                        font-size="10" font-weight="bold" fill="black">${memberName}</text>`;
+                
+                // Role text
+                if (memberRole) {
+                    svg += `<text x="${scaledX}" y="${scaledY + 8}" text-anchor="middle" 
+                            font-size="8" fill="black" opacity="0.8">${memberRole.replace(/[()]/g, '')}</text>`;
+                }
+                
+                // Stress level indicator
+                svg += `<text x="${scaledX + 20}" y="${scaledY - 15}" font-size="12" 
+                        fill="${fillColor}" font-weight="bold">${member.stress}</text>`;
+            });
+            
+            // Legend
+            svg += `<g transform="translate(10, ${height - 80})">
+                        <text x="0" y="0" font-size="10" font-weight="bold" fill="#666">Stress-Level:</text>
+                        <circle cx="15" cy="15" r="6" fill="#4CAF50"/><text x="25" y="19" font-size="8" fill="#666">1-Entspannt</text>
+                        <circle cx="80" cy="15" r="6" fill="#8BC34A"/><text x="90" y="19" font-size="8" fill="#666">2-Normal</text>
+                        <circle cx="140" cy="15" r="6" fill="#FFEB3B"/><text x="150" y="19" font-size="8" fill="#666">3-Angespannt</text>
+                        <circle cx="210" cy="15" r="6" fill="#FF9800"/><text x="220" y="19" font-size="8" fill="#666">4-Gestresst</text>
+                        <circle cx="280" cy="15" r="6" fill="#f44336"/><text x="290" y="19" font-size="8" fill="#666">5-Überlastet</text>
+                    </g>`;
+            
+            svg += `</svg></div>`;
+            return svg;
+        }
+
+        // Generate Smart Tasks (reduced and focused)
+        function generateSmartTasks(pattern, responseTopics) {
+            const tasks = [];
+            
+            // Always include one basic observation task
+            tasks.push("🔍 Beobachte diese Woche: In welchen Situationen fühlst du dich im Team am authentischsten?");
+            
+            // Add stress-specific task only if relevant
+            if (pattern.userStress >= 4) {
+                tasks.push("🌱 Experimentiere: Was passiert, wenn du bei Stress einen Schritt zurücktrittst?");
+            } else if (pattern.userStress <= 2) {
+                tasks.push("⚡ Teste: Wo könntest du mehr Initiative übernehmen?");
+            }
+            
+            // Add relationship task only if connections exist
+            const userConnections = connections.filter(c => {
+                const userMember = members.find(m => m.isSelf);
+                return userMember && (c.from === userMember.id || c.to === userMember.id);
+            });
+            
+            if (userConnections.length > 0) {
+                tasks.push("🔗 Analysiere deine wichtigste Arbeitsbeziehung: Was funktioniert gut?");
+            }
+            
+            // Add timeline task only if timeline was used
+            if (timelineMode && timelineData.length > 1) {
+                tasks.push("📈 Betrachte deine Entwicklung: Welche Veränderung war am überraschendsten?");
+            }
+            
+            return tasks.slice(0, 3); // Max 3 tasks
+        }
+
+        // Generate Smart Questions (based on actual responses)
+        function generateSmartQuestions(pattern, userResponses) {
+            const questions = [];
+            
+            // Always include one core systemic question
+            questions.push("Wenn das Team ein Mobile wäre - was passiert, wenn du deine Position veränderst?");
+            
+            // Add stress-related question if high stress
+            if (pattern.userStress >= 4) {
+                questions.push("Wofür ist dein Stress im System nützlich? Was würde ohne ihn passieren?");
+            }
+            
+            // Add follow-up questions based on response topics
+            const responseText = userResponses.map(r => r.response.toLowerCase()).join(' ');
+            
+            if (responseText.includes('stress') || responseText.includes('müde') || responseText.includes('anstrengend')) {
+                questions.push("Welche kleine Veränderung würde dich 20% entlasten?");
+            } else if (responseText.includes('team') || responseText.includes('andere')) {
+                questions.push("Was würde [Teamkollege] sagen, ist deine wichtigste Funktion im Team?");
+            } else {
+                questions.push("Was ist das Kleinste, was sich ändern müsste, damit du dich wohler fühlst?");
+            }
+            
+            return questions.slice(0, 2); // Max 2 questions to keep focused
+        }
+
+        // Initialize app
+        function init() {
+            safeExecute(function() {
+                initConnections();
+                createMembers();
+                updateConnections();
+                saveState();
+                setupEventListeners();
+                TimelineManager.init();
+                updateNavigationButtons();
+                initAutoSave();
+                initStatsUpdater();
+                
+                setTimeout(function() {
+                    showPopup('Willkommen beim Reflexions-Radar! 🎯', 
+                        '<strong>Systemische Selbstreflexion trifft digitale Innovation</strong><br><br>' +
+                        '<strong>🎯 VOLLSTÄNDIG: Alle Features jetzt verfügbar!</strong><br>' +
+                        '• <em>Doppelklick auf Kreise:</em> Als "Ich" markieren 🎯<br>' +
+                        '• <em>Einzelklick auf Kreise:</em> Stress-Level ändern<br>' +
+                        '• <em>Rechtsklick auf Verbindungen:</em> Menü öffnen<br>' +
+                        '• <em>Rechtsklick auf freie Fläche:</em> Neue Verbindung<br>' +
+                        '• <em>Mobile:</em> Lange berühren für Kontextmenüs<br>' +
+                        '• <em>⚙️ Settings:</em> Session speichern/laden/exportieren<br>' +
+                        '• <em>↩️↪️ Navigation:</em> Schritte rückgängig/wiederholen<br><br>' +
+                        '<strong>📱 Bedienung:</strong><br>' +
+                        '• <em>Kreis halten & ziehen:</em> Position verschieben<br>' +
+                        '• <em>💭 Reflexionsfragen:</em> Systemische Selbsterkundung<br>' +
+                        '• <em>📋 Arbeitsblatt:</em> Personalisiert basierend auf "Ich"-Auswahl<br>' +
+                        '• <em>⏰ Timeline:</em> Alle Änderungen nachverfolgbar<br><br>' +
+                        '<strong>🌱 Systemischer Ansatz:</strong> Ressourcenorientiert, konstruktivistisch, lösungsfokussiert'
+                    );
+                }, 1000);
+            }, 'Fehler beim Initialisieren der App');
+        }
+
+        // Start the application
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
